@@ -1,0 +1,124 @@
+@model IEnumerable<ProjectAppointment>
+@{
+    ViewData["Title"] = "Randevularım";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Randevularım")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="mb-0 text-white font-weight-bold">
+                <i class="fa fa-calendar-check text-warning mr-2"></i> Proje Ziyaret & Randevu Taleplerim (@Model.Count())
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Proje</th>
+                                <th>Talep Edilen Tarih</th>
+                                <th>Durum</th>
+                                <th>Yönetici Notu</th>
+                                <th class="text-right" style="min-width: 220px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var app in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@(app.Project?.Title ?? "-")</div>
+                                        <small class="text-muted">İletişim: @app.Phone</small>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">
+                                            <i class="far fa-clock text-warning mr-1"></i>@app.AppointmentDate.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                        @if (app.SuggestedAlternativeDate.HasValue && app.Status == "AlternatifTarihOnerildi")
+                                        {
+                                            <div class="small text-danger font-weight-bold mt-1">
+                                                Önerilen Tarih: @app.SuggestedAlternativeDate.Value.ToString("dd.MM.yyyy HH:mm")
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (app.Status)
+                                        {
+                                            case "Beklemede":
+                                                <span class="badge badge-warning">Onay Bekliyor</span>
+                                                break;
+                                            case "AlternatifTarihOnerildi":
+                                                <span class="badge badge-info">Alternatif Tarih Önerildi</span>
+                                                break;
+                                            case "Onaylandi":
+                                                <span class="badge badge-success">Onaylandı</span>
+                                                break;
+                                            case "Reddedildi":
+                                                <span class="badge badge-danger">Reddedildi</span>
+                                                break;
+                                            case "IptalEdildi":
+                                                <span class="badge badge-secondary">İptal Edildi</span>
+                                                break;
+                                            case "Tamamlandi":
+                                                <span class="badge badge-dark">Tamamlandı</span>
+                                                break;
+                                            default:
+                                                <span class="badge badge-light border">@app.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="small text-muted" style="max-width: 200px;">
+                                        @(string.IsNullOrEmpty(app.AdminNotes) ? "-" : app.AdminNotes)
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="d-inline-flex align-items-center">
+                                            @if (app.Status == "AlternatifTarihOnerildi")
+                                            {
+                                                <form asp-controller="Portal" asp-action="AcceptAlternativeDate" asp-route-id="@app.Id" method="post" class="d-inline mr-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-success btn-sm font-weight-bold" title="Önerilen Tarihi Kabul Et">
+                                                        <i class="fa fa-check mr-1"></i> Kabul Et
+                                                    </button>
+                                                </form>
+                                                <form asp-controller="Portal" asp-action="DeclineAlternativeDate" asp-route-id="@app.Id" method="post" class="d-inline mr-1" onsubmit="return confirm('Alternatif randevu tarihini reddetmek istediğinize emin misiniz?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger btn-sm" title="Reddet">
+                                                        <i class="fa fa-times mr-1"></i> Reddet
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            @if (app.Status == "Beklemede" || app.Status == "Onaylandi")
+                                            {
+                                                <form asp-controller="Portal" asp-action="CancelAppointment" asp-route-id="@app.Id" method="post" class="d-inline" onsubmit="return confirm('Randevunuzu iptal etmek istediğinize emin misiniz?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Randevuyu İptal Et">
+                                                        <i class="fa fa-ban mr-1"></i> İptal Et
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fa fa-calendar-times fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="font-weight-bold text-dark">Kayıtlı Randevunuz Bulunmuyor</h5>
+                    <p class="text-muted small mb-0">Projelerimizin detay sayfalarından örnek daire veya şantiye ziyareti için randevu oluşturabilirsiniz.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

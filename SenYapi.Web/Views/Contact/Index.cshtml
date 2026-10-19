@@ -1,0 +1,108 @@
+@model ContactMessageDto
+@inject ICaptchaService CaptchaService
+@{
+    ViewData["Title"] = "İletişim";
+}
+
+<partial name="_PageHeader" model='("İletişim", "İletişim")' />
+
+<!-- Contact Start -->
+<div class="contact wow fadeInUp">
+    <div class="container">
+        <div class="section-header text-center">
+            <p>Bize Ulaşın</p>
+            <h2>Her Türlü Soru ve Proje Talebiniz İçin</h2>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="flaticon-address"></i>
+                        <div class="contact-text">
+                            <h2>Adres</h2>
+                            <p>Levent Mah. Büyükdere Cad. No:123, Şişli / İstanbul</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="flaticon-call"></i>
+                        <div class="contact-text">
+                            <h2>Telefon</h2>
+                            <p>+90 (212) 555 0123 / +90 (532) 555 0124</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="flaticon-send-mail"></i>
+                        <div class="contact-text">
+                            <h2>E-Posta</h2>
+                            <p>info@senyapi.com / proje@senyapi.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="contact-form">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">
+                            <i class="fa fa-check-circle"></i> @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <form asp-controller="Contact" asp-action="SendMessage" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="control-group mb-3">
+                            <input asp-for="Name" class="form-control" placeholder="Adınız Soyadınız" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="control-group mb-3">
+                            <input asp-for="Email" class="form-control" placeholder="E-Posta Adresiniz" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="control-group mb-3">
+                            <input asp-for="Subject" class="form-control" placeholder="Konu Başlığı" />
+                            <span asp-validation-for="Subject" class="text-danger small"></span>
+                        </div>
+                        <div class="control-group mb-3">
+                            <textarea asp-for="Message" class="form-control" rows="5" placeholder="Mesajınız"></textarea>
+                            <span asp-validation-for="Message" class="text-danger small"></span>
+                        </div>
+
+                        <!-- CAPTCHA (Turnstile) -->
+                        <div class="control-group mb-3 text-left">
+                            <div id="cf-turnstile-contact" class="cf-turnstile" data-sitekey="@CaptchaService.GetSiteKey()" data-action="contact" data-theme="light"></div>
+                        </div>
+
+                        <div>
+                            <button class="btn" type="submit">Mesajı Gönder</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Contact End -->
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script>
+        $(document).ready(function () {
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <text>
+                setTimeout(function () {
+                    if (window.turnstile) {
+                        try {
+                            turnstile.reset('#cf-turnstile-contact');
+                        } catch (e) {
+                            try { turnstile.reset(); } catch (err) {}
+                        }
+                    }
+                }, 300);
+                </text>
+            }
+        });
+    </script>
+}

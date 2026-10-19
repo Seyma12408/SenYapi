@@ -1,0 +1,118 @@
+@model AppUser
+@{
+    ViewData["Title"] = "Profilim ve Hesap Ayarlarım";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Profilim")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="row">
+        <!-- Profile Info & Avatar Card -->
+        <div class="col-lg-7 mb-4">
+            <div class="card border-0 shadow-sm rounded-lg">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 text-white font-weight-bold">
+                        <i class="fa fa-user-edit text-warning mr-2"></i> Kişisel Bilgiler & Profil Fotoğrafı
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-controller="Portal" asp-action="UpdateProfile" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+
+                        <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                            <div class="mr-3 text-center">
+                                @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                                {
+                                    <img src="@Url.Content(Model.ProfilePictureUrl)" alt="@Model.UserName" class="profile-picture rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid #fdbe33;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-dark text-warning d-flex align-items-center justify-content-center font-weight-bold shadow-sm" style="width: 80px; height: 80px; font-size: 28px; border: 2px solid #fdbe33;">
+                                        @(string.IsNullOrEmpty(Model.FullName) ? Model.UserName?[0].ToString().ToUpper() : Model.FullName[0].ToString().ToUpper())
+                                    </div>
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <label class="font-weight-bold text-dark small mb-1">Profil Fotoğrafı Seç</label>
+                                <input type="file" name="profilePhoto" class="form-control-file border p-1 rounded" accept="image/png,image/jpeg,image/webp" />
+                                <small class="text-muted d-block mt-1">Maksimum 5MB (JPG, PNG, WEBP)</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                            {
+                                <div class="ml-2">
+                                    <button type="submit" formaction="@Url.Action("RemoveProfilePicture", "Portal")" class="btn btn-outline-danger btn-sm" onclick="return confirm('Profil fotoğrafınızı kaldırmak istediğinize emin misiniz?');">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-dark">Kullanıcı Adı</label>
+                            <input type="text" class="form-control bg-light" value="@Model.UserName" readonly />
+                            <small class="text-muted">Kullanıcı adı sistem güvenliği açısından değiştirilemez.</small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-dark">Ad Soyad</label>
+                            <input type="text" name="fullName" class="form-control" value="@Model.FullName" placeholder="Adınız ve Soyadınız" required />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-dark">E-Posta Adresi</label>
+                            <input type="email" class="form-control bg-light" value="@Model.Email" readonly />
+                            <small class="text-muted">E-posta adresi kayıtlı ve doğrulanmış ana iletişim bilginizdir.</small>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark">Telefon Numarası <span class="text-muted font-weight-normal">(İsteğe bağlı)</span></label>
+                            <input type="tel" name="phoneNumber" class="form-control" value="@Model.PhoneNumber" placeholder="05XX XXX XX XX" />
+                            <small class="text-muted">Randevu ve bilgi taleplerinde mimarlarımızın size ulaşabilmesi için kullanılır.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning font-weight-bold px-4 py-2">
+                            <i class="fa fa-save mr-1"></i> Bilgileri Güncelle
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change Card -->
+        <div class="col-lg-5 mb-4">
+            <div class="card border-0 shadow-sm rounded-lg">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 text-white font-weight-bold">
+                        <i class="fa fa-key text-warning mr-2"></i> Şifre Değiştir
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-controller="Portal" asp-action="ChangePassword" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-dark">Mevcut Şifre *</label>
+                            <input type="password" name="currentPassword" class="form-control" required placeholder="••••••••" />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-dark">Yeni Şifre *</label>
+                            <input type="password" name="newPassword" class="form-control" required placeholder="En az 6 karakter" />
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark">Yeni Şifre Tekrarı *</label>
+                            <input type="password" name="confirmNewPassword" class="form-control" required placeholder="Yeni şifreyi tekrar girin" />
+                        </div>
+
+                        <button type="submit" class="btn btn-dark font-weight-bold btn-block py-2">
+                            <i class="fa fa-shield-alt text-warning mr-1"></i> Şifreyi Güncelle
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

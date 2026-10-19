@@ -1,0 +1,195 @@
+@model IEnumerable<ProjectAppointment>
+@{
+    ViewData["Title"] = "Şantiye & Ofis Randevuları Yönetimi";
+    var status = ViewBag.Status as string;
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle mr-1"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle mr-1"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-calendar-check text-warning mr-2"></i> Randevu Talepleri (@Model.Count())
+            </h5>
+            <div class="d-flex align-items-center mt-2 mt-sm-0">
+                <a asp-action="Appointments" asp-route-status="all" class="btn btn-sm mr-1 @(string.IsNullOrEmpty(status) || status == "all" ? "btn-dark font-weight-bold" : "btn-outline-secondary")">Tümü</a>
+                <a asp-action="Appointments" asp-route-status="Beklemede" class="btn btn-sm mr-1 @(status == "Beklemede" ? "btn-warning text-dark font-weight-bold" : "btn-outline-warning text-dark")">Bekleyenler</a>
+                <a asp-action="Appointments" asp-route-status="Onaylandi" class="btn btn-sm mr-1 @(status == "Onaylandi" ? "btn-success font-weight-bold" : "btn-outline-success")">Onaylananlar</a>
+                <a asp-action="Appointments" asp-route-status="AlternatifTarihOnerildi" class="btn btn-sm mr-1 @(status == "AlternatifTarihOnerildi" ? "btn-info text-white font-weight-bold" : "btn-outline-info")">Tarih Önerilen</a>
+                <a asp-action="Appointments" asp-route-status="Tamamlandi" class="btn btn-sm @(status == "Tamamlandi" ? "btn-secondary font-weight-bold" : "btn-outline-secondary")">Tamamlananlar</a>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-calendar-times fa-3x mb-3 text-warning"></i>
+                    <p class="mb-0">Henüz bu kritere uyan bir randevu talebi bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Proje</th>
+                                <th>Kullanıcı / Telefon</th>
+                                <th>Talep Edilen Randevu</th>
+                                <th>Durum</th>
+                                <th>Admin Notu / Öneri</th>
+                                <th class="text-right" style="width: 150px;">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@(item.Project?.Title ?? "Proje")</div>
+                                        <small class="text-muted"><i class="fa fa-map-marker-alt text-warning mr-1"></i> @(item.Project?.Location ?? "İstanbul")</small>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold">@item.FullName</div>
+                                        <div class="small text-muted"><i class="fa fa-envelope mr-1"></i> @item.Email</div>
+                                        <div class="small text-muted"><i class="fa fa-phone mr-1"></i> @(string.IsNullOrEmpty(item.Phone) ? "-" : item.Phone)</div>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">
+                                            <i class="fa fa-calendar mr-1 text-warning"></i> @item.PreferredDate.ToString("dd MMMM yyyy, dddd")
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="fa fa-clock mr-1"></i> @item.PreferredTimeSlot
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(item.Notes))
+                                        {
+                                            <div class="small text-secondary mt-1 font-italic">
+                                                "@item.Notes"
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Status == "Beklemede")
+                                        {
+                                            <span class="badge badge-warning text-dark px-2 py-1 font-weight-bold">Beklemede</span>
+                                        }
+                                        else if (item.Status == "Onaylandi")
+                                        {
+                                            <span class="badge badge-success px-2 py-1 font-weight-bold">Onaylandı</span>
+                                        }
+                                        else if (item.Status == "AlternatifTarihOnerildi")
+                                        {
+                                            <span class="badge badge-info text-white px-2 py-1 font-weight-bold">Alternatif Önerildi</span>
+                                        }
+                                        else if (item.Status == "Reddedildi")
+                                        {
+                                            <span class="badge badge-danger px-2 py-1 font-weight-bold">Reddedildi</span>
+                                        }
+                                        else if (item.Status == "IptalEdildi")
+                                        {
+                                            <span class="badge badge-secondary px-2 py-1">İptal Edildi</span>
+                                        }
+                                        else if (item.Status == "Tamamlandi")
+                                        {
+                                            <span class="badge badge-dark px-2 py-1 font-weight-bold">Tamamlandı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light border px-2 py-1">@item.Status</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.AlternativeDate.HasValue)
+                                        {
+                                            <div class="small text-info font-weight-bold">
+                                                <i class="fa fa-clock mr-1"></i> @item.AlternativeDate.Value.ToString("dd.MM.yyyy HH:mm")
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.AdminNotes))
+                                        {
+                                            <div class="small text-muted mt-1">@item.AdminNotes</div>
+                                        }
+                                        else if (!item.AlternativeDate.HasValue)
+                                        {
+                                            <span class="small text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        <button type="button" class="btn btn-sm btn-dark font-weight-bold" data-toggle="modal" data-target="#aptModal-@item.Id">
+                                            <i class="fa fa-cog mr-1"></i> Yönet
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Appointment Manage Modal -->
+                                <div class="modal fade" id="aptModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-dark text-warning">
+                                                <h5 class="modal-title font-weight-bold">Randevu Talebini Yönet (#@item.Id)</h5>
+                                                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                                            </div>
+                                            <form asp-action="UpdateAppointmentStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <div class="modal-body">
+                                                    <div class="mb-3 p-3 bg-light rounded small">
+                                                        <div><strong>Kullanıcı:</strong> @item.FullName (@item.Email)</div>
+                                                        <div><strong>Proje:</strong> @(item.Project?.Title)</div>
+                                                        <div><strong>Talep Edilen:</strong> @item.PreferredDate.ToString("dd.MM.yyyy") (@item.PreferredTimeSlot)</div>
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold small">Randevu Durumu</label>
+                                                        <select name="status" class="form-control" id="statusSelect-@item.Id">
+                                                            <option value="Onaylandi" selected="@(item.Status == "Onaylandi")">Onayla (Kabul Et)</option>
+                                                            <option value="AlternatifTarihOnerildi" selected="@(item.Status == "AlternatifTarihOnerildi")">Alternatif Tarih Öner</option>
+                                                            <option value="Reddedildi" selected="@(item.Status == "Reddedildi")">Reddet</option>
+                                                            <option value="Tamamlandi" selected="@(item.Status == "Tamamlandi")">Görüşme Tamamlandı</option>
+                                                            <option value="Beklemede" selected="@(item.Status == "Beklemede")">Beklemede Tut</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold small">Alternatif Randevu Tarihi ve Saati (Gerekirse)</label>
+                                                        <input type="datetime-local" name="alternativeDate" class="form-control" value="@(item.AlternativeDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                        <small class="form-text text-muted">Eğer talep edilen tarih/saat müsait değilse yeni zaman önerisi seçiniz.</small>
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold small">Yönetici Notu / Mesaj</label>
+                                                        <textarea name="adminNotes" class="form-control" rows="3" placeholder="Kullanıcıya iletilecek açıklama veya ofis yol tarifi notu...">@item.AdminNotes</textarea>
+                                                        <small class="form-text text-muted">Durum değişikliğinde kullanıcıya sistem içi bildirim anında gönderilir.</small>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Kapat</button>
+                                                    <button type="submit" class="btn btn-warning font-weight-bold">Durumu Kaydet</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>

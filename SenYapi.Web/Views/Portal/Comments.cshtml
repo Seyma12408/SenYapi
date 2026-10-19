@@ -1,0 +1,86 @@
+@model IEnumerable<BlogComment>
+@{
+    ViewData["Title"] = "Yorumlarım";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Yorumlarım")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="mb-0 text-white font-weight-bold">
+                <i class="fa fa-comment-dots text-warning mr-2"></i> Blog Yazılarına Yaptığım Yorumlar (@Model.Count())
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var c in Model)
+                    {
+                        <div class="list-group-item p-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="font-weight-bold text-dark">Makale:</span>
+                                    <a href="/blog/@c.BlogPost?.Slug" class="text-primary font-weight-bold" target="_blank">
+                                        @(c.BlogPost?.Title ?? "Blog Yazısı") <i class="fa fa-external-link-alt small"></i>
+                                    </a>
+                                </div>
+                                <div>
+                                    @if (c.IsApproved)
+                                    {
+                                        <span class="badge badge-success px-2 py-1"><i class="fa fa-check mr-1"></i> Yayında</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning px-2 py-1"><i class="fa fa-clock mr-1"></i> Onay Bekliyor</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="p-3 bg-light rounded text-dark mb-2" style="word-break: break-word;">
+                                @c.Comment
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(c.AdminReply))
+                            {
+                                <div class="p-3 rounded mt-2 border" style="background: #fffdf5; border-left: 4px solid #fdbe33 !important;">
+                                    <small class="font-weight-bold text-dark d-block">
+                                        <i class="fa fa-shield-alt text-warning mr-1"></i> Şen Yapı Yönetici Yanıtı:
+                                    </small>
+                                    <span class="small text-dark mt-1 d-block" style="word-break: break-word;">@c.AdminReply</span>
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <small class="text-muted"><i class="far fa-clock mr-1"></i>@c.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                <div>
+                                    <a href="/blog/@c.BlogPost?.Slug#comment-@c.Id" class="btn btn-outline-dark btn-sm mr-1">
+                                        Sayfada Gör
+                                    </a>
+                                    <form asp-controller="Blog" asp-action="DeleteMyComment" method="post" class="d-inline m-0" onsubmit="return confirm('Bu yorumu silmek istediğinize emin misiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="commentId" value="@c.Id" />
+                                        <input type="hidden" name="returnSlug" value="@c.BlogPost?.Slug" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="fa fa-trash mr-1"></i> Sil
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fa fa-comments fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="font-weight-bold text-dark">Henüz Yorumunuz Bulunmuyor</h5>
+                    <p class="text-muted small mb-0">Blog sayfalarımızda makaleleri inceleyip düşüncelerinizi paylaşabilirsiniz.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

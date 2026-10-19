@@ -1,0 +1,139 @@
+@model IEnumerable<ContentVersion>
+@{
+    ViewData["Title"] = "İçerik Sürüm Geçmişi";
+    var entityType = ViewBag.EntityType as string;
+    var entityId = ViewBag.EntityId as int?;
+}
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle mr-1"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle mr-1"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 font-weight-bold text-dark">
+                    <i class="fa fa-history text-warning mr-2"></i> @(entityType == "Project" ? "Proje" : "Blog") Sürüm Geçmişi (ID: @entityId)
+                </h5>
+                <small class="text-muted">Bu içeriğin zaman içinde yapılan her düzenleme anındaki anlık kopyaları saklanır.</small>
+            </div>
+            <div>
+                @if (entityType == "Project")
+                {
+                    <a asp-controller="AdminProjects" asp-action="Projects" class="btn btn-sm btn-outline-dark font-weight-bold">
+                        <i class="fa fa-arrow-left mr-1"></i> Projelere Dön
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="AdminBlog" asp-action="Blog" class="btn btn-sm btn-outline-dark font-weight-bold">
+                        <i class="fa fa-arrow-left mr-1"></i> Blog Listesine Dön
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-history fa-3x mb-3 text-secondary"></i>
+                    <p class="mb-0">Bu içerik için henüz kaydedilmiş bir sürüm geçmişi bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 80px;">Sürüm</th>
+                                <th>Başlık Snapshot</th>
+                                <th>İçerik Özeti</th>
+                                <th>Düzenleyen</th>
+                                <th>Kayıt Tarihi</th>
+                                <th class="text-right" style="width: 220px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-warning text-dark font-weight-bold px-2 py-1">v@(v.VersionNumber)</span>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@v.Title</div>
+                                    </td>
+                                    <td>
+                                        <div class="small text-muted" style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            @v.Content
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light border">@v.EditorUserName</span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">@v.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <button type="button" class="btn btn-sm btn-outline-info mr-1" data-toggle="modal" data-target="#viewVersionModal-@v.Id">
+                                            <i class="fa fa-eye mr-1"></i> İncele
+                                        </button>
+                                        <form asp-controller="AdminManagement" asp-action="RollbackVersion" method="post" class="d-inline" onsubmit="return confirm('Bu içeriği v@(v.VersionNumber) sürümündeki durumuna geri döndürmek istediğinize emin misiniz?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="versionId" value="@v.Id" />
+                                            <button type="submit" class="btn btn-sm btn-warning font-weight-bold">
+                                                <i class="fa fa-undo mr-1"></i> Geri Dön
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+
+                                <!-- View Version Modal -->
+                                <div class="modal fade" id="viewVersionModal-@v.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-dark text-warning">
+                                                <h5 class="modal-title font-weight-bold">Sürüm Detayı: v@(v.VersionNumber)</h5>
+                                                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <div class="mb-3">
+                                                    <strong>Kayıt Zamanı:</strong> @v.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") &bull; 
+                                                    <strong>Düzenleyen:</strong> @v.EditorUserName
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="font-weight-bold small">Başlık</label>
+                                                    <input type="text" class="form-control" value="@v.Title" readonly />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="font-weight-bold small">İçerik Metni</label>
+                                                    <textarea class="form-control" rows="8" readonly>@v.Content</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Kapat</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+

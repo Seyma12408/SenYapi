@@ -1,0 +1,43 @@
+@{
+    ViewData["Title"] = "Çerez Politikası";
+}
+
+<partial name="_PageHeader" model='("Çerez (Cookie) Politikası", "Yasal Bilgilendirme")' />
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4 text-dark font-weight-bold">Çerez (Cookie) Politikası ve Tercihleri</h3>
+            <p class="lead text-muted">
+                Şen Yapı İnşaat A.Ş. web sitesi olarak kullanıcı deneyiminizi geliştirmek ve sitemizi daha verimli kılmak amacıyla çerezler kullanmaktayız.
+            </p>
+            <hr class="my-4" />
+
+            <h5 class="font-weight-bold text-dark mt-4">1. Çerez Nedir?</h5>
+            <p>
+                Çerezler, bir web sitesini ziyaret ettiğinizde tarayıcınız aracılığıyla cihazınıza kaydedilen küçük metin dosyalarıdır. Çerezler sayesinde tercihleriniz hatırlanır ve sitemiz daha hızlı ve kişiselleştirilmiş çalışır.
+            </p>
+
+            <h5 class="font-weight-bold text-dark mt-4">2. Sitemizde Kullanılan Çerez Türleri</h5>
+            <ul>
+                <li><strong>Zorunlu Çerezler:</strong> Web sitemizin güvenli oturum açma, form gönderimi ve CSRF koruması gibi temel işlevleri için gereklidir.</li>
+                <li><strong>Performans ve Analiz Çerezleri:</strong> Sitemizi ziyaret eden kullanıcıların hangi projeleri ve sayfaları daha sık incelediğini anonim olarak analiz etmemize yardımcı olur.</li>
+                <li><strong>İşlevsel Çerezler:</strong> Dil tercihi, oturum bilgileri gibi kullanıcı deneyimini kolaylaştıran verileri tutar.</li>
+            </ul>
+
+            <h5 class="font-weight-bold text-dark mt-4">3. Çerez Yönetimi ve Devre Dışı Bırakma</h5>
+            <p>
+                İstediğiniz zaman tarayıcınızın (Chrome, Edge, Firefox, Safari vb.) ayarlarından çerezleri silebilir veya engelleyebilirsiniz. Ancak zorunlu çerezlerin kapatılması durumunda sitenin bazı özellikleri (giriş yapma, dinamik formlar) düzgün çalışmayabilir.
+            </p>
+
+            <div class="mt-4 pt-3 border-top">
+                <a asp-controller="Home" asp-action="Privacy" class="btn btn-warning font-weight-bold">
+                    <i class="fa fa-shield-alt mr-1"></i> Gizlilik Politikamızı İnceleyin
+                </a>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-dark ml-2">
+                    Ana Sayfaya Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

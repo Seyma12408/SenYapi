@@ -1,0 +1,49 @@
+@model AppUser
+@{
+    ViewData["Title"] = "Hesabı Dondur";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Hesabı Dondur")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 text-white font-weight-bold">
+                        <i class="fa fa-power-off text-warning mr-2"></i> Hesabı Geçici Olarak Dondur
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning">
+                        <i class="fa fa-info-circle mr-2"></i>
+                        <strong>Hesabınızı dondurduğunuzda:</strong>
+                        <ul class="mb-0 mt-2 pl-3">
+                            <li>Mevcut oturumunuz sonlandırılır.</li>
+                            <li>Profiliniz ve favorileriniz sistemde güvenle saklanmaya devam eder.</li>
+                            <li>Dilediğiniz zaman tekrar kullanıcı adı ve şifrenizle giriş yaparak hesabınızı anında yeniden aktif hale getirebilirsiniz.</li>
+                        </ul>
+                    </div>
+
+                    <form asp-controller="Portal" asp-action="ConfirmDeactivateAccount" method="post" onsubmit="return confirm('Hesabınızı geçici olarak dondurmak istediğinize emin misiniz?');">
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark">Kimliğinizi Doğrulamak İçin Şifrenizi Girin *</label>
+                            <input type="password" name="confirmPassword" class="form-control" required placeholder="Mevcut Şifreniz" />
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="/hesap/profil" class="btn btn-secondary">Vazgeç</a>
+                            <button type="submit" class="btn btn-danger font-weight-bold px-4">
+                                <i class="fa fa-power-off mr-1"></i> Hesabımı Dondur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

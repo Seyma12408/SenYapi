@@ -1,0 +1,458 @@
+@model Project
+@{
+    ViewData["Title"] = Model.MetaTitle ?? Model.Title;
+    bool isFav = ViewBag.IsFavorite == true;
+    var currentUser = ViewBag.CurrentUser as AppUser;
+}
+
+<partial name="_PageHeader" model='(Model.Title, "Proje Detayı")' />
+
+<div class="single py-5">
+    <div class="container">
+        <!-- Notification Alert Placeholder -->
+        <div id="projectAlertPlaceholder"></div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Cover Image & Badge -->
+                <div class="single-content wow fadeInUp mb-4">
+                    <div class="project-cover-box position-relative overflow-hidden rounded shadow-sm mb-4">
+                        <img src="@Url.Content(Model.ImageUrl)" alt="@Model.Title" />
+                        <span class="position-absolute badge @(Model.Category == "complete" ? "badge-success" : Model.Category == "running" ? "badge-primary" : "badge-info") px-3 py-2" style="top: 15px; left: 15px; font-size: 15px; z-index: 2;">
+                            @Model.CategoryName
+                        </span>
+                    </div>
+
+                    <!-- Header & Favorite Button -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 border-bottom pb-3">
+                        <div>
+                            <h2 class="font-weight-bold text-dark mb-1">@Model.Title</h2>
+                            <span class="text-muted small">
+                                <i class="fa fa-map-marker-alt text-warning mr-1"></i> @(string.IsNullOrWhiteSpace(Model.Location) ? "İstanbul, Türkiye" : Model.Location)
+                                <span class="mx-2">•</span>
+                                <i class="fa fa-calendar-alt text-muted mr-1"></i> @Model.CreatedAt.ToString("dd MMMM yyyy")
+                            </span>
+                        </div>
+                        <div class="mt-2 mt-sm-0">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <button type="button" class="btn @(isFav ? "btn-danger" : "btn-outline-danger") font-weight-bold px-3 py-2" id="btnToggleFavorite" data-id="@Model.Id">
+                                    <i class="@(isFav ? "fas" : "far") fa-heart mr-1"></i> <span id="favText">@(isFav ? "Favorilerimde" : "Favoriye Ekle")</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <a href="/giris?returnUrl=@Url.Action("Detail", "Project", new { slug = Model.Slug })" class="btn btn-outline-danger font-weight-bold px-3 py-2" title="Favorilere eklemek için giriş yapınız">
+                                    <i class="far fa-heart mr-1"></i> Favoriye Ekle
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Price Banner (if configured) -->
+                    @if (Model.ShowPrice && Model.Price.HasValue)
+                    {
+                        <div class="p-3 mb-4 rounded bg-light border-left border-warning" style="border-left-width: 5px !important;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted text-uppercase small font-weight-bold">Başlangıç Fiyatı</span>
+                                    <h3 class="font-weight-bold text-dark mb-0">
+                                        @Model.PricePrefix @Model.Price.Value.ToString("N0") @Model.Currency
+                                    </h3>
+                                </div>
+                                <span class="badge badge-warning text-dark px-3 py-2 font-weight-bold">
+                                    <i class="fa fa-tag mr-1"></i> Özel Lansman Fiyatı
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Description -->
+                    <div class="lead text-dark mb-4" style="line-height: 1.8; font-size: 16px;">
+                        @Model.Description
+                    </div>
+
+                    <!-- Project Gallery Section -->
+                    @if (Model.Images != null && Model.Images.Any())
+                    {
+                        <div class="project-gallery mt-5 pt-4 border-top">
+                            <h4 class="font-weight-bold text-dark mb-3"><i class="fa fa-images text-warning mr-2"></i> Proje Fotoğraf Galerisi</h4>
+                            <div class="row">
+                                @foreach (var img in Model.Images.OrderBy(i => i.DisplayOrder))
+                                {
+                                    <div class="col-md-4 col-sm-6 mb-3">
+                                        <div class="gallery-item rounded overflow-hidden shadow-sm border">
+                                            <a href="@Url.Content(img.ImageUrl)" data-lightbox="project-gallery" data-title="@(img.AltText ?? Model.Title)">
+                                                <img src="@Url.Content(img.ImageUrl)" alt="@(img.AltText ?? Model.Title)" class="w-100 h-100" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Map Section if MapEmbedUrl exists -->
+                    @if (!string.IsNullOrWhiteSpace(Model.MapEmbedUrl))
+                    {
+                        <div class="project-map mt-5 pt-4 border-top">
+                            <h4 class="font-weight-bold text-dark mb-3"><i class="fa fa-map-marked-alt text-warning mr-2"></i> Konum ve Ulaşım</h4>
+                            <div class="rounded overflow-hidden shadow-sm border" style="height: 350px;">
+                                <iframe src="@Model.MapEmbedUrl" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(Model.Address))
+                            {
+                                <p class="text-muted small mt-2 mb-0"><i class="fa fa-map-pin mr-1 text-danger"></i> @Model.Address</p>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="sidebar">
+                    <!-- Project Details Card (Künye) -->
+                    <div class="sidebar-widget wow fadeInUp mb-4 p-4 bg-white rounded shadow-sm border">
+                        <h4 class="widget-title font-weight-bold mb-3 border-bottom pb-2 text-dark">
+                            <i class="fa fa-info-circle text-warning mr-1"></i> Proje Künyesi
+                        </h4>
+                        <ul class="list-unstyled mb-0">
+                            <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <span class="text-muted font-weight-bold">Durum:</span>
+                                <span class="font-weight-bold text-dark">@Model.CategoryName</span>
+                            </li>
+                            <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <span class="text-muted font-weight-bold">Konum:</span>
+                                <span class="text-right">@(string.IsNullOrWhiteSpace(Model.Location) ? "İstanbul / Türkiye" : Model.Location)</span>
+                            </li>
+                            @if (!string.IsNullOrWhiteSpace(Model.EstimatedDeliveryDate))
+                            {
+                                <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="text-muted font-weight-bold">Teslim Tarihi:</span>
+                                    <span class="badge badge-warning text-dark font-weight-bold">@Model.EstimatedDeliveryDate</span>
+                                </li>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.ApartmentTypes))
+                            {
+                                <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="text-muted font-weight-bold">Daire Tipleri:</span>
+                                    <span class="font-weight-bold">@Model.ApartmentTypes</span>
+                                </li>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.AreaSquareMeters))
+                            {
+                                <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="text-muted font-weight-bold">Alan Aralığı:</span>
+                                    <span class="font-weight-bold">@Model.AreaSquareMeters</span>
+                                </li>
+                            }
+                            <li class="py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <span class="text-muted font-weight-bold">Yüklenici:</span>
+                                <span>Şen Yapı İnşaat A.Ş.</span>
+                            </li>
+                            <li class="py-2 d-flex justify-content-between align-items-center">
+                                <span class="text-muted font-weight-bold">Garanti:</span>
+                                <span>10 Yıl Taşıyıcı Sistem</span>
+                            </li>
+                        </ul>
+
+                        <!-- PDF Brochure Download Button -->
+                        @if (!string.IsNullOrWhiteSpace(Model.PdfBrochureUrl))
+                        {
+                            <div class="mt-4 pt-3 border-top">
+                                <a href="@Url.Content(Model.PdfBrochureUrl)" target="_blank" download class="btn btn-outline-danger btn-block font-weight-bold py-2">
+                                    <i class="fa fa-file-pdf mr-2"></i> Proje Kataloğunu İndir (PDF)
+                                </a>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Call To Action & Modal Triggers -->
+                    <div class="sidebar-widget wow fadeInUp p-4 bg-dark text-white rounded shadow-sm mb-4">
+                        <h4 class="widget-title font-weight-bold text-warning mb-2">Satış & Bilgi Ofisi</h4>
+                        <p class="small text-light mb-3">Kat planları, örnek daire ziyareti ve avantajlı ödeme planları hakkında uzman ekibimizle görüşün.</p>
+
+                        <!-- Bilgi Al Button -->
+                        <button type="button" class="btn btn-warning btn-block font-weight-bold py-2 mb-2" data-toggle="modal" data-target="#inquiryModal">
+                            <i class="fa fa-envelope mr-1"></i> Bilgi ve Teklif İste
+                        </button>
+
+                        <!-- Randevu Al Button -->
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <button type="button" class="btn btn-outline-light btn-block font-weight-bold py-2 mb-2" data-toggle="modal" data-target="#appointmentModal">
+                                <i class="fa fa-calendar-check mr-1"></i> Şantiye / Ofis Randevusu Al
+                            </button>
+                        }
+                        else
+                        {
+                            <a href="/giris?returnUrl=@Url.Action("Detail", "Project", new { slug = Model.Slug })" class="btn btn-outline-light btn-block font-weight-bold py-2 mb-2">
+                                <i class="fa fa-calendar-check mr-1"></i> Randevu Almak İçin Giriş Yap
+                            </a>
+                        }
+
+                        <a href="/projeler" class="btn btn-outline-secondary text-light btn-block font-weight-bold py-2 mt-3">
+                            <i class="fa fa-arrow-left mr-1"></i> Tüm Projelere Dön
+                        </a>
+                    </div>
+
+                    <!-- Quick Support Call -->
+                    <div class="sidebar-widget wow fadeInUp p-3 bg-light rounded text-center border">
+                        <span class="text-muted small">Hızlı Danışma Hattı</span>
+                        <h5 class="font-weight-bold text-dark mt-1 mb-0">
+                            <a href="tel:+902123456789" class="text-dark"><i class="fa fa-phone-alt text-warning mr-1"></i> +90 212 345 67 89</a>
+                        </h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= INQUIRY MODAL ======================= -->
+<div class="modal fade" id="inquiryModal" tabindex="-1" role="dialog" aria-labelledby="inquiryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold" id="inquiryModalLabel">
+                    <i class="fa fa-info-circle mr-1"></i> "@Model.Title" Hakkında Bilgi Al
+                </h5>
+                <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Kapat">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formInquiry">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="projectId" value="@Model.Id" />
+                <div class="modal-body p-4">
+                    <div id="inquiryErrorAlert" class="alert alert-danger d-none"></div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small">Adınız Soyadınız <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control" required value="@(currentUser?.FullName ?? "")" placeholder="Örn: Ahmet Yılmaz" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small">E-Posta Adresiniz <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control" required value="@(currentUser?.Email ?? "")" placeholder="Örn: ahmet@example.com" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small">Telefon Numaranız</label>
+                        <input type="tel" name="phone" class="form-control" value="@(currentUser?.PhoneNumber ?? "")" placeholder="Örn: 0532 123 4567" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small">Tercih Edilen İletişim Kanalı</label>
+                        <select name="preferredContactMethod" class="form-control">
+                            <option value="Telefon">Telefon Görüşmesi</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="E-posta" selected>E-posta</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold small">Mesajınız / Öğrenmek İstedikleriniz <span class="text-danger">*</span></label>
+                        <textarea name="message" class="form-control" rows="3" required placeholder="Daire tipleri, peşinat oranları, ödeme planı veya teslim tarihi hakkında sormak istedikleriniz..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold" id="btnSubmitInquiry">
+                        <i class="fa fa-paper-plane mr-1"></i> Talebi Gönder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= APPOINTMENT MODAL ======================= -->
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="modal fade" id="appointmentModal" tabindex="-1" role="dialog" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-warning">
+                    <h5 class="modal-title font-weight-bold" id="appointmentModalLabel">
+                        <i class="fa fa-calendar-alt mr-1"></i> "@Model.Title" Randevu Talebi
+                    </h5>
+                    <button type="button" class="close text-light" data-dismiss="modal" aria-label="Kapat">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="formAppointment">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@Model.Id" />
+                    <div class="modal-body p-4">
+                        <div id="appointmentErrorAlert" class="alert alert-danger d-none"></div>
+
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="fa fa-info-circle mr-1"></i> Satış ofisimizde örnek daire sunumu ve teknik detaylar için uygun gün ve saat aralığını seçiniz.
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Ziyaret Tarihi <span class="text-danger">*</span></label>
+                            <input type="date" name="preferredDate" id="appointmentDateInput" class="form-control" required min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Saat Aralığı <span class="text-danger">*</span></label>
+                            <select name="preferredTimeSlot" class="form-control" required>
+                                <option value="10:00 - 12:00">10:00 - 12:00</option>
+                                <option value="13:00 - 15:00">13:00 - 15:00</option>
+                                <option value="15:00 - 17:00">15:00 - 17:00</option>
+                                <option value="17:00 - 19:00">17:00 - 19:00</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold small">İletişim Numarası</label>
+                            <input type="tel" name="phone" class="form-control" value="@(currentUser?.PhoneNumber ?? "")" placeholder="0532 123 4567" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Ek Notlar / Özel İstekler</label>
+                            <textarea name="notes" class="form-control" rows="2" placeholder="Görüşmek istediğiniz daire tipi, kişi sayısı vb. (İsteğe bağlı)"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">İptal</button>
+                        <button type="submit" class="btn btn-warning font-weight-bold" id="btnSubmitAppointment">
+                            <i class="fa fa-check mr-1"></i> Randevu Talebini Onayla
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Helper to get token
+            function getAntiForgeryToken() {
+                return $('input[name="__RequestVerificationToken"]').first().val();
+            }
+
+            // 1. Favorite Toggle
+            $('#btnToggleFavorite').on('click', function () {
+                var $btn = $(this);
+                var projectId = $btn.data('id');
+                var token = getAntiForgeryToken();
+
+                $btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '/Project/ToggleFavorite',
+                    type: 'POST',
+                    data: {
+                        projectId: projectId,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (res) {
+                        $btn.prop('disabled', false);
+                        if (res.success) {
+                            if (res.isFavorite) {
+                                $btn.removeClass('btn-outline-danger').addClass('btn-danger');
+                                $btn.find('i').removeClass('far').addClass('fas');
+                                $('#favText').text('Favorilerimde');
+                            } else {
+                                $btn.removeClass('btn-danger').addClass('btn-outline-danger');
+                                $btn.find('i').removeClass('fas').addClass('far');
+                                $('#favText').text('Favoriye Ekle');
+                            }
+
+                            $('#projectAlertPlaceholder').html(
+                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                '<i class="fa fa-check-circle mr-1"></i> ' + res.message +
+                                '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>' +
+                                '</div>'
+                            );
+                        } else {
+                            alert(res.message || 'İşlem gerçekleştirilemedi.');
+                        }
+                    },
+                    error: function () {
+                        $btn.prop('disabled', false);
+                        alert('Bağlantı hatası oluştu.');
+                    }
+                });
+            });
+
+            // 2. Submit Inquiry Form
+            $('#formInquiry').on('submit', function (e) {
+                e.preventDefault();
+                var $btn = $('#btnSubmitInquiry');
+                var $alert = $('#inquiryErrorAlert');
+                $alert.addClass('d-none').text('');
+
+                $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Gönderiliyor...');
+
+                $.ajax({
+                    url: '/Project/SubmitInquiry',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (res) {
+                        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane mr-1"></i> Talebi Gönder');
+                        if (res.success) {
+                            $('#inquiryModal').modal('hide');
+                            $('#formInquiry')[0].reset();
+                            $('#projectAlertPlaceholder').html(
+                                '<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">' +
+                                '<i class="fa fa-check-circle mr-1"></i> ' + res.message +
+                                '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>' +
+                                '</div>'
+                            );
+                            $('html, body').animate({ scrollTop: 0 }, 400);
+                        } else {
+                            $alert.removeClass('d-none').text(res.message || 'Talep iletilemedi.');
+                        }
+                    },
+                    error: function () {
+                        $btn.prop('disabled', false).html('<i class="fa fa-paper-plane mr-1"></i> Talebi Gönder');
+                        $alert.removeClass('d-none').text('Bir sunucu hatası oluştu, lütfen tekrar deneyiniz.');
+                    }
+                });
+            });
+
+            // 3. Submit Appointment Form
+            $('#formAppointment').on('submit', function (e) {
+                e.preventDefault();
+                var $btn = $('#btnSubmitAppointment');
+                var $alert = $('#appointmentErrorAlert');
+                $alert.addClass('d-none').text('');
+
+                $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Oluşturuluyor...');
+
+                $.ajax({
+                    url: '/Project/SubmitAppointment',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (res) {
+                        $btn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Randevu Talebini Onayla');
+                        if (res.success) {
+                            $('#appointmentModal').modal('hide');
+                            $('#formAppointment')[0].reset();
+                            $('#projectAlertPlaceholder').html(
+                                '<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">' +
+                                '<i class="fa fa-check-circle mr-1"></i> ' + res.message +
+                                '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>' +
+                                '</div>'
+                            );
+                            $('html, body').animate({ scrollTop: 0 }, 400);
+                        } else {
+                            $alert.removeClass('d-none').text(res.message || 'Randevu talebi oluşturulamadı.');
+                        }
+                    },
+                    error: function () {
+                        $btn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Randevu Talebini Onayla');
+                        $alert.removeClass('d-none').text('Bir sunucu hatası oluştu, lütfen tekrar deneyiniz.');
+                    }
+                });
+            });
+        });
+    </script>
+}

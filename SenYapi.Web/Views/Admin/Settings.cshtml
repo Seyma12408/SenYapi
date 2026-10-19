@@ -1,0 +1,208 @@
+@model SiteSetting
+@{
+    ViewData["Title"] = "Site & Güvenlik Ayarları";
+    var recentLogs = ViewBag.RecentLogs as IEnumerable<AuditLog>;
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-check-circle mr-2"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Settings Form -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 text-white font-weight-bold">
+                        <i class="fa fa-sliders-h text-warning mr-2"></i> Firma ve Sistem Yapılandırması
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-controller="AdminManagement" asp-action="UpdateSettings" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@Model.Id" />
+
+                        <!-- Section: Company Info -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mb-3">
+                            <i class="fa fa-building mr-1"></i> Firma & Başlık Bilgileri
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Site Başlığı *</label>
+                                <input type="text" name="SiteTitle" class="form-control" value="@Model.SiteTitle" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Slogan / Alt Başlık</label>
+                                <input type="text" name="Tagline" class="form-control" value="@Model.Tagline" />
+                            </div>
+                        </div>
+
+                        <!-- Section: Contact Info -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4 mb-3">
+                            <i class="fa fa-address-book mr-1"></i> İletişim Bilgileri
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Telefon Numarası</label>
+                                <input type="text" name="Phone" class="form-control" value="@Model.Phone" />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">E-Posta Adresi</label>
+                                <input type="email" name="Email" class="form-control" value="@Model.Email" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Adres</label>
+                                <input type="text" name="Address" class="form-control" value="@Model.Address" />
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Çalışma Saatleri</label>
+                                <input type="text" name="WorkingHours" class="form-control" value="@Model.WorkingHours" />
+                            </div>
+                        </div>
+
+                        <!-- Section: Social Media -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4 mb-3">
+                            <i class="fa fa-share-alt mr-1"></i> Sosyal Medya Bağlantıları
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Facebook URL</label>
+                                <input type="url" name="FacebookUrl" class="form-control" value="@Model.FacebookUrl" placeholder="https://facebook.com/..." />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Instagram URL</label>
+                                <input type="url" name="InstagramUrl" class="form-control" value="@Model.InstagramUrl" placeholder="https://instagram.com/..." />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Twitter (X) URL</label>
+                                <input type="url" name="TwitterUrl" class="form-control" value="@Model.TwitterUrl" placeholder="https://twitter.com/..." />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">LinkedIn URL</label>
+                                <input type="url" name="LinkedInUrl" class="form-control" value="@Model.LinkedInUrl" placeholder="https://linkedin.com/..." />
+                            </div>
+                        </div>
+
+                        <!-- Section: Security & Lockout Policy -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4 mb-3">
+                            <i class="fa fa-shield-alt mr-1"></i> Güvenlik & Kilitlenme Politikası (Brute-Force Koruması)
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Maksimum Başarısız Giriş Denemesi *</label>
+                                <input type="number" name="MaxFailedAccessAttempts" class="form-control" value="@Model.MaxFailedAccessAttempts" min="1" max="10" required />
+                                <small class="text-muted">Bu kadar art arda yanlış şifre denendiğinde hesap geçici olarak kilitlenir (Varsayılan: 3).</small>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Geçici Kilitlenme Süresi (Dakika) *</label>
+                                <input type="number" name="DefaultLockoutMinutes" class="form-control" value="@Model.DefaultLockoutMinutes" min="1" max="1440" required />
+                                <small class="text-muted">Kilitlenen kullanıcının bekleyeceği süre (Varsayılan: 15 dakika).</small>
+                            </div>
+                        </div>
+
+                        <!-- Section: Logo & Favicon -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4 mb-3">
+                            <i class="fa fa-image mr-1"></i> Logo & Görseller
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Site Logosu</label>
+                                @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                                {
+                                    <div class="mb-2 p-2 border rounded bg-light d-flex align-items-center" style="max-width: 280px;">
+                                        <img src="@Url.Content(Model.LogoUrl)" alt="Mevcut Logo" class="admin-img-contain mr-2" style="max-height: 50px; max-width: 180px; width: auto;" />
+                                        <span class="badge badge-light border text-muted">Mevcut</span>
+                                    </div>
+                                }
+                                <label class="font-weight-bold text-muted small d-block">Yeni Logo Yükle</label>
+                                <input type="file" name="logoFile" class="form-control-file border p-1 rounded" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                <small class="text-muted d-block mt-1">Logo <code>object-fit: contain</code> kuralı ile kırpılmadan orantılı gösterilir.</small>
+                                <input type="hidden" name="LogoUrl" value="@Model.LogoUrl" />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Site Faviconu</label>
+                                @if (!string.IsNullOrEmpty(Model.FaviconUrl))
+                                {
+                                    <div class="mb-2 p-2 border rounded bg-light d-flex align-items-center" style="max-width: 200px;">
+                                        <img src="@Url.Content(Model.FaviconUrl)" alt="Mevcut Favicon" class="mr-2" style="width: 28px; height: 28px; object-fit: contain;" />
+                                        <span class="badge badge-light border text-muted">Mevcut</span>
+                                    </div>
+                                }
+                                <label class="font-weight-bold text-muted small d-block">Yeni Favicon Yükle</label>
+                                <input type="file" name="faviconFile" class="form-control-file border p-1 rounded" accept="image/png,image/x-icon,image/svg+xml" />
+                                <small class="text-muted d-block mt-1">Mevcut: <code>@Model.FaviconUrl</code></small>
+                                <input type="hidden" name="FaviconUrl" value="@Model.FaviconUrl" />
+                            </div>
+                        </div>
+
+                        <!-- Section: Banner / Slogan -->
+                        <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4 mb-3">
+                            <i class="fa fa-image mr-1"></i> Ana Sayfa Karşılama (Hero) Metinleri
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Ana Sayfa Başlığı</label>
+                                <input type="text" name="HeroTitle" class="form-control" value="@Model.HeroTitle" />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark">Ana Sayfa Alt Metni</label>
+                                <input type="text" name="HeroSubtitle" class="form-control" value="@Model.HeroSubtitle" />
+                            </div>
+                        </div>
+
+                        <div class="text-right mt-4">
+                            <button type="submit" class="btn btn-warning px-4 py-2 font-weight-bold">
+                                <i class="fa fa-save mr-1"></i> Ayarları Güncelle ve Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Logs / Activity History -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+                <div class="card-header bg-dark text-white py-3">
+                    <h6 class="mb-0 text-white font-weight-bold">
+                        <i class="fa fa-history text-warning mr-2"></i> Son Güvenlik & İşlem Kayıtları
+                    </h6>
+                </div>
+                <div class="card-body p-0" style="max-height: 700px; overflow-y: auto;">
+                    @if (recentLogs != null && recentLogs.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var log in recentLogs)
+                            {
+                                <li class="list-group-item px-3 py-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge badge-light border font-weight-bold">@log.Action</span>
+                                        <small class="text-muted">@log.CreatedAt.ToString("dd.MM HH:mm")</small>
+                                    </div>
+                                    <div class="small text-dark font-weight-bold">@log.EntityName - @log.UserName</div>
+                                    <small class="text-muted d-block text-truncate">@log.Details</small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted small">Henüz işlem kaydı bulunmuyor.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>

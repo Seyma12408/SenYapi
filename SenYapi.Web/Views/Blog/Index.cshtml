@@ -1,0 +1,83 @@
+@model IEnumerable<BlogPost>
+@{
+    ViewData["Title"] = "Blog & Haberler";
+}
+
+<partial name="_PageHeader" model='("Blog & Haberler", "Blog")' />
+
+<!-- Blog Start -->
+<div class="blog">
+    <div class="container">
+        <div class="section-header text-center">
+            <p>Güncel Yazılar</p>
+            <h2>İnşaat Dünyasından Yenilikler</h2>
+        </div>
+        <div class="row blog-page">
+            @foreach (var post in Model)
+            {
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="blog-item">
+                        <div class="blog-img">
+                            <img src="@Url.Content(post.ImageUrl)" alt="@post.Title">
+                        </div>
+                        <div class="blog-content">
+                            <div class="blog-meta">
+                                @if (!string.IsNullOrEmpty(post.Category))
+                                {
+                                    <span class="blog-meta-item blog-meta-category">
+                                        <i class="fa fa-tag text-warning mr-1"></i>@post.Category
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(post.Author))
+                                {
+                                    <span class="blog-meta-item blog-meta-author">
+                                        <i class="fa fa-user text-muted mr-1"></i>@post.Author
+                                    </span>
+                                }
+                                <span class="blog-meta-item blog-meta-date">
+                                    <i class="fa fa-calendar-alt text-muted mr-1"></i>@post.CreatedAt.ToString("dd.MM.yyyy")
+                                </span>
+                            </div>
+                            <h3 class="blog-title">
+                                <a href="/blog/@(string.IsNullOrEmpty(post.Slug) ? post.Id.ToString() : post.Slug)">@post.Title</a>
+                            </h3>
+                            <div class="blog-text">
+                                <p>@post.Summary</p>
+                            </div>
+                            <div class="blog-action mt-auto">
+                                <a href="/blog/@(string.IsNullOrEmpty(post.Slug) ? post.Id.ToString() : post.Slug)" class="blog-read-more">
+                                    Devamını Oku <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (ViewBag.TotalPages != null && (int)ViewBag.TotalPages > 1)
+        {
+            <div class="row mt-4">
+                <div class="col-12">
+                    <nav aria-label="Blog Sayfaları">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="/blog?page=@(ViewBag.CurrentPage - 1)">Önceki</a>
+                            </li>
+                            @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == (int)ViewBag.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="/blog?page=@i">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(ViewBag.CurrentPage == (int)ViewBag.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="/blog?page=@(ViewBag.CurrentPage + 1)">Sonraki</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<!-- Blog End -->

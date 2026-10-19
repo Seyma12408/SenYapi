@@ -1,0 +1,167 @@
+@model AdminTrashViewModel
+@{
+    ViewData["Title"] = "Çöp Kutusu (Geri Dönüşüm)";
+    bool isAdmin = User.IsInRole("Admin");
+}
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle mr-1"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle mr-1"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+    <!-- 1. Trash Projects -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-building text-warning mr-2"></i> Çöp Kutusundaki Projeler (@Model.Projects.Count())
+            </h5>
+            <span class="badge badge-secondary">Yumuşak Silinmiş</span>
+        </div>
+        <div class="card-body p-0">
+            @if (!Model.Projects.Any())
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fa fa-trash fa-2x mb-2 text-secondary"></i>
+                    <p class="mb-0 small">Çöp kutusunda silinmiş proje bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 60px;">Görsel</th>
+                                <th>Proje Adı</th>
+                                <th>Kategori</th>
+                                <th>Silinme Tarihi</th>
+                                <th class="text-right" style="width: 260px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Projects)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@Url.Content(p.ImageUrl)" alt="@p.Title" class="admin-img-16-9 shadow-sm" style="width: 60px;" />
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@p.Title</div>
+                                        <small class="text-muted">Slug: @p.Slug</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light border">@p.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">@(p.DeletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <form asp-controller="AdminManagement" asp-action="RestoreProject" asp-route-id="@p.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold mr-1">
+                                                <i class="fa fa-undo mr-1"></i> Geri Yükle
+                                            </button>
+                                        </form>
+
+                                        @if (isAdmin)
+                                        {
+                                            <form asp-controller="AdminManagement" asp-action="PermanentDeleteProject" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('DİKKAT: Bu proje ve tüm bağlı dosyalar veritabanından kalıcı olarak silinecektir! Emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-danger font-weight-bold">
+                                                    <i class="fa fa-trash mr-1"></i> Kalıcı Sil
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 2. Trash Blog Posts -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-newspaper text-warning mr-2"></i> Çöp Kutusundaki Blog Yazıları (@Model.BlogPosts.Count())
+            </h5>
+            <span class="badge badge-secondary">Yumuşak Silinmiş</span>
+        </div>
+        <div class="card-body p-0">
+            @if (!Model.BlogPosts.Any())
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fa fa-trash fa-2x mb-2 text-secondary"></i>
+                    <p class="mb-0 small">Çöp kutusunda silinmiş blog yazısı bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 60px;">Görsel</th>
+                                <th>Başlık</th>
+                                <th>Kategori</th>
+                                <th>Silinme Tarihi</th>
+                                <th class="text-right" style="width: 260px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var b in Model.BlogPosts)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@Url.Content(b.ImageUrl)" alt="@b.Title" class="admin-img-16-9 shadow-sm" style="width: 60px;" />
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@b.Title</div>
+                                        <small class="text-muted">Yazar: @b.Author</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light border">@b.Category</span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">@(b.DeletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <form asp-controller="AdminManagement" asp-action="RestorePost" asp-route-id="@b.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-success font-weight-bold mr-1">
+                                                <i class="fa fa-undo mr-1"></i> Geri Yükle
+                                            </button>
+                                        </form>
+
+                                        @if (isAdmin)
+                                        {
+                                            <form asp-controller="AdminManagement" asp-action="PermanentDeletePost" asp-route-id="@b.Id" method="post" class="d-inline" onsubmit="return confirm('DİKKAT: Bu blog yazısı ve tüm yorumları kalıcı olarak silinecektir! Emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-danger font-weight-bold">
+                                                    <i class="fa fa-trash mr-1"></i> Kalıcı Sil
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+

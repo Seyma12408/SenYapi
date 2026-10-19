@@ -1,0 +1,215 @@
+@using Microsoft.AspNetCore.Identity
+@using SenYapi.Business.Services
+@using SenYapi.Entity
+@inject INotificationService NotificationService
+@inject UserManager<AppUser> UserManager
+@inject IPermissionService PermissionService
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    bool isAuthenticated = User.Identity?.IsAuthenticated == true;
+    bool canAccessAdmin = isAuthenticated && await PermissionService.HasPermissionAsync(User, SenYapi.Core.Constants.Permissions.AdminAccess);
+    int unreadNotifications = 0;
+    AppUser? currentUser = null;
+
+    if (isAuthenticated)
+    {
+        var userId = UserManager.GetUserId(User);
+        if (!string.IsNullOrEmpty(userId))
+        {
+            unreadNotifications = await NotificationService.GetUnreadCountAsync(userId);
+            currentUser = await UserManager.GetUserAsync(User);
+        }
+    }
+}
+
+<!-- Nav Bar Start -->
+<div class="nav-bar">
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg bg-dark navbar-dark py-2">
+            <a href="/anasayfa" class="navbar-brand d-lg-none text-warning font-weight-bold">ŞEN YAPI</a>
+            <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
+                <div class="navbar-nav mr-auto">
+                    <a href="/anasayfa" class="nav-item nav-link @(currentController == "Home" ? "active" : "")">Anasayfa</a>
+                    <a href="/hakkimizda" class="nav-item nav-link @(currentController == "About" ? "active" : "")">Hakkımızda</a>
+                    <a href="/hizmetler" class="nav-item nav-link @(currentController == "Service" ? "active" : "")">Hizmetlerimiz</a>
+                    <a href="/ekibimiz" class="nav-item nav-link @(currentController == "Team" ? "active" : "")">Ekibimiz</a>
+                    <a href="/projeler" class="nav-item nav-link @(currentController == "Project" ? "active" : "")">Projeler</a>
+                    <a href="/blog" class="nav-item nav-link @(currentController == "Blog" ? "active" : "")">Blog</a>
+                    <a href="/iletisim" class="nav-item nav-link @(currentController == "Contact" ? "active" : "")">İletişim</a>
+
+                    @if (canAccessAdmin)
+                    {
+                        <a href="/Admin" class="nav-item nav-link @(currentController == "Admin" ? "active" : "") text-warning font-weight-bold">
+                            <i class="fa fa-cogs mr-1"></i> Admin Paneli
+                        </a>
+                    }
+                </div>
+
+                <div class="ml-auto d-flex align-items-center">
+                    @if (isAuthenticated)
+                    {
+                        <!-- In-App Notification Bell -->
+                        <a href="/hesap/bildirimler" class="text-white mr-3 position-relative d-inline-flex align-items-center" title="Bildirimler" style="text-decoration: none;">
+                            <i class="fa fa-bell @(unreadNotifications > 0 ? "text-warning" : "text-light")" style="font-size: 18px;"></i>
+                            @if (unreadNotifications > 0)
+                            {
+                                <span class="badge badge-danger badge-pill position-absolute" style="top: -8px; right: -10px; font-size: 10px; padding: 3px 6px;">
+                                    @unreadNotifications
+                                </span>
+                            }
+                        </a>
+
+                        <!-- User Profile Dropdown Menu -->
+                        <div class="dropdown user-dropdown">
+                            <button class="btn btn-dark text-white dropdown-toggle d-flex align-items-center font-weight-bold border-0 px-2 py-1 user-dropdown-toggle" type="button" id="userMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: transparent;">
+                                @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
+                                {
+                                    <img src="@Url.Content(currentUser.ProfilePictureUrl)" alt="@User.Identity!.Name" class="user-avatar rounded-circle mr-2 border border-warning" style="width: 28px; height: 28px;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center font-weight-bold mr-2" style="width: 28px; height: 28px; font-size: 13px;">
+                                        @(User.Identity!.Name?.Substring(0, 1).ToUpper() ?? "U")
+                                    </div>
+                                }
+                                <span>@User.Identity!.Name</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right shadow user-dropdown-menu" aria-labelledby="userMenuButton">
+                                <div class="px-3 py-2 bg-light border-bottom">
+                                    <div class="font-weight-bold text-dark text-truncate" style="font-size: 14px;">@(currentUser?.FullName ?? User.Identity!.Name)</div>
+                                    <small class="text-muted text-truncate d-block" style="font-size: 12px;">@currentUser?.Email</small>
+                                </div>
+                                <a class="dropdown-item py-2" href="/hesap/profil"><i class="fa fa-user-edit text-warning mr-2"></i> Profil & Ayarlar</a>
+                                <a class="dropdown-item py-2" href="/hesap/favoriler"><i class="fa fa-heart text-danger mr-2"></i> Favori Projelerim</a>
+                                <a class="dropdown-item py-2" href="/hesap/talepler"><i class="fa fa-info-circle text-primary mr-2"></i> Bilgi Taleplerim</a>
+                                <a class="dropdown-item py-2" href="/hesap/randevular"><i class="fa fa-calendar-alt text-success mr-2"></i> Randevularım</a>
+                                <a class="dropdown-item py-2" href="/hesap/mesajlar"><i class="fa fa-comments text-info mr-2"></i> Mesajlarım</a>
+                                <a class="dropdown-item py-2" href="/hesap/bildirimler"><i class="fa fa-bell text-warning mr-2"></i> Bildirimler (@unreadNotifications)</a>
+                                <a class="dropdown-item py-2" href="/hesap/yorumlar"><i class="fa fa-comment-dots text-secondary mr-2"></i> Yorumlarım</a>
+
+                                @if (canAccessAdmin)
+                                {
+                                    <div class="dropdown-divider my-1"></div>
+                                    <a class="dropdown-item py-2 font-weight-bold text-warning" href="/Admin">
+                                        <i class="fa fa-cogs mr-2"></i> Admin Paneli
+                                    </a>
+                                }
+
+                                <div class="dropdown-divider my-1"></div>
+                                <a class="dropdown-item py-2 small text-secondary" href="/hesap/dondur"><i class="fa fa-pause-circle text-muted mr-2"></i> Hesabı Dondur</a>
+                                <a class="dropdown-item py-2 small text-danger" href="/hesap/sil"><i class="fa fa-trash-alt text-danger mr-2"></i> Hesabı Kalıcı Sil</a>
+
+                                <div class="dropdown-divider my-1"></div>
+                                <div class="p-2">
+                                    <form action="/cikis-yap" method="post" class="m-0">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-logout font-weight-bold">
+                                            <i class="fa fa-sign-out-alt mr-1"></i> Çıkış Yap
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="/giris-yap" class="btn btn-outline-light mr-2 font-weight-bold">Giriş Yap</a>
+                        <a href="/kayit-ol" class="btn btn-warning font-weight-bold">Kayıt Ol</a>
+                    }
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+<!-- Nav Bar End -->
+
+<style>
+    /* User Profile Dropdown Styling & High-Contrast Fixes */
+    .user-dropdown {
+        position: relative;
+    }
+    .user-dropdown-toggle {
+        cursor: pointer;
+    }
+    .user-dropdown-menu {
+        min-width: 250px;
+        max-width: 320px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        background-color: #ffffff !important;
+        border: 1px solid rgba(0, 0, 0, 0.15) !important;
+        border-radius: 6px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+        margin-top: 2px !important;
+        padding: 0 !important;
+        z-index: 1050 !important;
+    }
+    .user-dropdown-menu::-webkit-scrollbar {
+        width: 5px;
+    }
+    .user-dropdown-menu::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+    }
+    .user-dropdown-menu::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .user-dropdown-menu .dropdown-item {
+        padding: 9px 16px !important;
+        font-size: 13.5px !important;
+        color: #212529 !important;
+        text-transform: none !important;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
+    }
+    .user-dropdown-menu .dropdown-item:hover,
+    .user-dropdown-menu .dropdown-item:focus {
+        background-color: #f1f5f9 !important;
+        color: #030f27 !important;
+    }
+    .user-dropdown-menu .dropdown-item i {
+        width: 20px;
+        text-align: center;
+        margin-right: 8px;
+    }
+    /* Fix .nav-bar .btn override: High contrast solid red button for logout */
+    .nav-bar .user-dropdown-menu .btn-logout,
+    .user-dropdown-menu .btn-logout {
+        background-color: #dc3545 !important;
+        border: 1px solid #dc3545 !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+        padding: 8px 14px !important;
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+        text-transform: none !important;
+        font-size: 13.5px !important;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.25) !important;
+        transition: background-color 0.2s ease, border-color 0.2s ease !important;
+    }
+    .nav-bar .user-dropdown-menu .btn-logout:hover,
+    .nav-bar .user-dropdown-menu .btn-logout:focus,
+    .user-dropdown-menu .btn-logout:hover,
+    .user-dropdown-menu .btn-logout:focus {
+        background-color: #c82333 !important;
+        border-color: #bd2130 !important;
+        color: #ffffff !important;
+    }
+    @@media (max-width: 991.98px) {
+        .nav-bar .user-dropdown-menu {
+            position: absolute !important;
+            right: 0 !important;
+            left: auto !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+        }
+    }
+</style>

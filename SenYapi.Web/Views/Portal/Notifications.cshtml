@@ -1,0 +1,84 @@
+@model IEnumerable<InAppNotification>
+@{
+    ViewData["Title"] = "Bildirimlerim";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Bildirimlerim")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white font-weight-bold">
+                <i class="fa fa-bell text-warning mr-2"></i> Bildirim Merkezi (@Model.Count())
+            </h5>
+            @if (Model != null && Model.Any(n => !n.IsRead))
+            {
+                <form asp-controller="Portal" asp-action="MarkAllNotificationsRead" method="post" class="d-inline m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold">
+                        <i class="fa fa-check-double mr-1"></i> Tümünü Okundu İşaretle
+                    </button>
+                </form>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var notif in Model)
+                    {
+                        <div class="list-group-item p-4 border-bottom @(!notif.IsRead ? "bg-light border-left-warning" : "")">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 mr-3">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fa @(!notif.IsRead ? "fa-envelope text-warning" : "fa-envelope-open text-muted") mr-2"></i>
+                                        <h6 class="font-weight-bold text-dark mb-0">@notif.Title</h6>
+                                        @if (!notif.IsRead)
+                                        {
+                                            <span class="badge badge-warning ml-2">Yeni</span>
+                                        }
+                                    </div>
+                                    <p class="mb-2 text-dark small" style="word-break: break-word;">@notif.Message</p>
+                                    <small class="text-muted"><i class="far fa-clock mr-1"></i>@notif.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <div class="flex-shrink-0 text-right">
+                                    @if (!string.IsNullOrEmpty(notif.LinkUrl))
+                                    {
+                                        <form asp-controller="Portal" asp-action="MarkNotificationRead" method="post" class="d-inline mr-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="notificationId" value="@notif.Id" />
+                                            <input type="hidden" name="returnUrl" value="@notif.LinkUrl" />
+                                            <button type="submit" class="btn btn-outline-dark btn-sm">
+                                                Görüntüle <i class="fa fa-external-link-alt ml-1"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (!notif.IsRead)
+                                    {
+                                        <form asp-controller="Portal" asp-action="MarkNotificationRead" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="notificationId" value="@notif.Id" />
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Okundu Yap">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="far fa-bell-slash fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="font-weight-bold text-dark">Henüz Bildiriminiz Yok</h5>
+                    <p class="text-muted small mb-0">Randevu güncellemeleri, yorum onayları ve yönetici yanıtları burada listelenecektir.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

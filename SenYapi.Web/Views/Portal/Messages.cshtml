@@ -1,0 +1,92 @@
+@model IEnumerable<Conversation>
+@{
+    ViewData["Title"] = "Mesajlarım";
+}
+
+<partial name="_PageHeader" model='("Hesap Yönetimi", "Mesajlarım")' />
+
+<div class="container py-5">
+    <partial name="_PortalNav" />
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white font-weight-bold">
+                <i class="fa fa-comments text-warning mr-2"></i> Yönetim ile Mesajlaşmalarım (@Model.Count())
+            </h5>
+            <button type="button" class="btn btn-warning btn-sm font-weight-bold" data-toggle="modal" data-target="#newConversationModal">
+                <i class="fa fa-plus-circle mr-1"></i> Yeni Mesaj Başlat
+            </button>
+        </div>
+        <div class="card-body p-0">
+            @if (Model != null && Model.Any())
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var conv in Model)
+                    {
+                        var lastMsg = conv.Messages?.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+                        <a href="/hesap/mesajlar/@conv.Id" class="list-group-item list-group-item-action p-4 border-bottom @(conv.UserUnread ? "bg-light border-left-warning" : "")">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                <h6 class="font-weight-bold text-dark mb-0">
+                                    @if (conv.UserUnread)
+                                    {
+                                        <span class="badge badge-warning mr-2">Yeni Yanıt!</span>
+                                    }
+                                    @conv.Subject
+                                </h6>
+                                <small class="text-muted">@conv.LastMessageAt.ToString("dd.MM.yyyy HH:mm")</small>
+                            </div>
+                            <p class="mb-1 text-muted small text-truncate" style="max-width: 600px;">
+                                @(lastMsg != null ? $"{(lastMsg.IsAdmin ? "Şen Yapı: " : "Siz: ")}{lastMsg.Message}" : "Henüz mesaj yok.")
+                            </p>
+                            <small class="badge @(conv.Status == "Cevaplandi" ? "badge-success" : conv.Status == "Kapatildi" ? "badge-secondary" : "badge-info")">
+                                @(conv.Status == "Cevaplandi" ? "Yanıtlandı" : conv.Status == "Kapatildi" ? "Kapatıldı" : "Cevap Bekleniyor")
+                            </small>
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fa fa-envelope-open-text fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="font-weight-bold text-dark">Henüz Bir Konuşmanız Yok</h5>
+                    <p class="text-muted small mb-3">Mühendislerimiz ve müşteri temsilcilerimizle doğrudan mesajlaşmak için yeni bir konu başlatabilirsiniz.</p>
+                    <button type="button" class="btn btn-warning font-weight-bold" data-toggle="modal" data-target="#newConversationModal">
+                        Yeni Mesaj Başlat
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- New Conversation Modal -->
+<div class="modal fade" id="newConversationModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fa fa-envelope text-warning mr-2"></i> Şen Yapı Yönetimine Mesaj Gönder
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form asp-controller="Portal" asp-action="CreateConversation" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Konu Başlığı *</label>
+                        <input type="text" name="subject" class="form-control" required placeholder="Örn: Vadi Konakları Teslim Tarihi Hakkında" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Mesajınız *</label>
+                        <textarea name="message" class="form-control" rows="5" required placeholder="Yönetime iletmek istediğiniz detayları yazın..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold">Mesajı İlet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

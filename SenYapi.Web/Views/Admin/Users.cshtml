@@ -1,0 +1,213 @@
+@model IEnumerable<AppUser>
+@{
+    ViewData["Title"] = "Kullanıcılar, Roller & Güvenlik";
+    var userRoles = ViewBag.UserRoles as Dictionary<string, string> ?? new Dictionary<string, string>();
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-check-circle mr-2"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <div>
+                <h5 class="mb-0 font-weight-bold text-dark">
+                    <i class="fa fa-user-shield text-warning mr-2"></i> Sistem Kullanıcıları (@Model.Count())
+                </h5>
+                <small class="text-muted">
+                    Kullanıcı yetkileri (Admin / Editör / Üye), kilit açma, engelleme ve kalıcı silme işlemleri.
+                </small>
+            </div>
+            <div>
+                <span class="badge badge-warning text-dark px-3 py-2 font-weight-bold">
+                    <i class="fa fa-shield-alt mr-1"></i> Son Admin Koruması Devrede
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Kullanıcı</th>
+                            <th>E-posta & Telefon</th>
+                            <th>Rolü</th>
+                            <th>Kayıt Tarihi</th>
+                            <th>Kilit & Durum</th>
+                            <th class="text-right" style="min-width: 320px;">Yetki & Güvenlik İşlemleri</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var user in Model)
+                            {
+                                var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+                                var currentRole = userRoles.ContainsKey(user.Id) ? userRoles[user.Id] : "User";
+
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                            {
+                                                <img src="@Url.Content(user.ProfilePictureUrl)" alt="@user.UserName" class="admin-img-square rounded-circle mr-2 border shadow-sm" style="width: 38px; height: 38px;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-circle bg-dark text-warning d-flex align-items-center justify-content-center font-weight-bold mr-2" style="width: 38px; height: 38px; font-size: 14px;">
+                                                    @user.UserName?.Substring(0, 1).ToUpper()
+                                                </div>
+                                            }
+                                            <div>
+                                                <div class="font-weight-bold text-dark">@user.UserName</div>
+                                                <small class="text-muted">@(user.FullName ?? "Ad Soyad Girilmedi")</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div><i class="fa fa-envelope text-muted mr-1"></i> @user.Email</div>
+                                        @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                        {
+                                            <div class="small text-muted"><i class="fa fa-phone text-muted mr-1"></i> @user.PhoneNumber</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (currentRole == "SystemAdmin")
+                                        {
+                                            <span class="badge badge-danger font-weight-bold px-2 py-1"><i class="fa fa-user-shield mr-1"></i> Sistem Yöneticisi</span>
+                                        }
+                                        else if (currentRole == "Admin")
+                                        {
+                                            <span class="badge badge-warning text-dark font-weight-bold px-2 py-1"><i class="fa fa-crown mr-1"></i> Admin</span>
+                                        }
+                                        else if (currentRole == "Editor")
+                                        {
+                                            <span class="badge badge-info font-weight-bold px-2 py-1"><i class="fa fa-edit mr-1"></i> Editör</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary px-2 py-1"><i class="fa fa-user mr-1"></i> Standart Üye</span>
+                                        }
+                                    </td>
+                                    <td class="small">@user.CreatedAt.ToString("dd.MM.yyyy")</td>
+                                    <td>
+                                        @if (user.IsDeactivated)
+                                        {
+                                            <span class="badge badge-warning text-dark">
+                                                <i class="fa fa-pause-circle mr-1"></i> Dondurulmuş
+                                            </span>
+                                        }
+                                        else if (user.IsBlocked)
+                                        {
+                                            <span class="badge badge-dark">
+                                                <i class="fa fa-ban mr-1"></i> Engelli
+                                            </span>
+                                        }
+                                        else if (isLocked)
+                                        {
+                                            var remainingMin = Math.Ceiling((user.LockoutEnd!.Value - DateTimeOffset.UtcNow).TotalMinutes);
+                                            <span class="badge badge-danger">
+                                                <i class="fa fa-lock mr-1"></i> Kilitli (~@remainingMin dk)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-success">
+                                                <i class="fa fa-check mr-1"></i> Aktif
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        @if (currentRole == "SystemAdmin" || user.Email == "admin@senyapi.com")
+                                        {
+                                            <span class="badge badge-light border text-muted px-2 py-1 font-weight-bold">
+                                                <i class="fa fa-shield-alt text-warning mr-1"></i> Korumalı Sistem Yöneticisi
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-inline-flex align-items-center">
+                                                <!-- Permissions Edit Button -->
+                                                <a asp-controller="AdminUsers" asp-action="UserPermissions" asp-route-userId="@user.Id" class="btn btn-warning btn-sm font-weight-bold mr-1 text-dark" title="Kişisel Yetkileri Düzenle">
+                                                    <i class="fa fa-user-lock mr-1"></i> Yetkiler
+                                                </a>
+
+                                                <!-- Role Change Form -->
+                                                <form asp-controller="AdminUsers" asp-action="ChangeUserRole" method="post" class="d-inline mr-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    <div class="input-group input-group-sm" style="width: 130px;">
+                                                        <select name="newRole" class="custom-select custom-select-sm" onchange="this.form.submit()">
+                                                            <option value="Admin" selected="@(currentRole == "Admin")">Admin</option>
+                                                            <option value="Editor" selected="@(currentRole == "Editor")">Editör</option>
+                                                            <option value="User" selected="@(currentRole == "User")">Üye</option>
+                                                        </select>
+                                                    </div>
+                                                </form>
+
+                                                <!-- Unlock button -->
+                                                @if (isLocked)
+                                                {
+                                                    <form asp-controller="AdminUsers" asp-action="UnlockUser" method="post" class="d-inline mr-1">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="userId" value="@user.Id" />
+                                                        <button type="submit" class="btn btn-outline-success btn-sm font-weight-bold" title="Geçici Kilidi Aç">
+                                                            <i class="fa fa-key"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                <!-- Block / Unblock button -->
+                                                <form asp-controller="AdminUsers" asp-action="ToggleBlockUser" method="post" class="d-inline mr-1" onsubmit="return confirm('@(user.IsBlocked ? "Kullanıcının engelini kaldırmak istiyor musunuz?" : "Bu kullanıcıyı engellemek istiyor musunuz?")');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    @if (user.IsBlocked)
+                                                    {
+                                                        <button type="submit" class="btn btn-outline-info btn-sm" title="Engeli Kaldır">
+                                                            <i class="fa fa-unlock"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="submit" class="btn btn-outline-dark btn-sm" title="Engelle">
+                                                            <i class="fa fa-ban"></i>
+                                                        </button>
+                                                    }
+                                                </form>
+
+                                                <!-- Delete Permanently button -->
+                                                <form asp-controller="AdminUsers" asp-action="DeleteUserPermanently" method="post" class="d-inline" onsubmit="return confirm('DİKKAT: @user.UserName kullanıcısı kalıcı olarak silinecektir. Yorumları anonimleştirilecektir. Devam edilsin mi?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Kalıcı Olarak Sil">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Kayıtlı kullanıcı bulunamadı.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>

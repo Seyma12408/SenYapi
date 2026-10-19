@@ -1,0 +1,87 @@
+<!-- Footer Start -->
+<div class="footer wow fadeIn" data-wow-delay="0.3s">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-lg-3">
+                <div class="footer-contact">
+                    <h2>İletişim Bilgileri</h2>
+                    <p><i class="fa fa-map-marker-alt"></i> Levent Mah. Büyükdere Cad. No:123, İstanbul</p>
+                    <p><i class="fa fa-phone-alt"></i> +90 (212) 555 0123</p>
+                    <p><i class="fa fa-envelope"></i> info@senyapi.com</p>
+                    <div class="footer-social">
+                        <a href="https://twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+                        <a href="https://facebook.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://youtube.com" target="_blank"><i class="fab fa-youtube"></i></a>
+                        <a href="https://instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="https://linkedin.com" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="footer-link">
+                    <h2>Hizmet Alanlarımız</h2>
+                    <a asp-controller="Service" asp-action="Index">Bina İnşaatı</a>
+                    <a asp-controller="Service" asp-action="Index">Ev & Ofis Yenileme</a>
+                    <a asp-controller="Service" asp-action="Index">Mimari Tasarım</a>
+                    <a asp-controller="Service" asp-action="Index">İç Dekorasyon</a>
+                    <a asp-controller="Service" asp-action="Index">Dış Cephe & Yalıtım</a>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="footer-link">
+                    <h2>Hızlı Bağlantılar</h2>
+                    <a asp-controller="About" asp-action="Index">Hakkımızda</a>
+                    <a asp-controller="Contact" asp-action="Index">Bize Ulaşın</a>
+                    <a asp-controller="Team" asp-action="Index">Uzman Kadromuz</a>
+                    <a asp-controller="Project" asp-action="Index">Projelerimiz</a>
+                    <a asp-controller="Blog" asp-action="Index">Haberler & Blog</a>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="newsletter">
+                    <h2>E-Bülten</h2>
+                    <p>
+                        Güncel projelerimizden ve inşaat sektörü yeniliklerinden haberdar olmak için e-bültenimize kaydolun.
+                    </p>
+                    @if (TempData["NewsletterSuccess"] != null)
+                    {
+                        <div class="alert alert-success p-2 small">
+                            @TempData["NewsletterSuccess"]
+                        </div>
+                    }
+                    @if (TempData["NewsletterError"] != null)
+                    {
+                        <div class="alert alert-danger p-2 small">
+                            @TempData["NewsletterError"]
+                        </div>
+                    }
+                    <form asp-controller="Newsletter" asp-action="Subscribe" method="post" class="form">
+                        <input class="form-control" name="email" type="email" placeholder="E-posta adresiniz" required>
+                        <button class="btn" type="submit">Gönder</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container footer-menu">
+        <div class="f-menu">
+            <a href="/kullanim-kosullari">Kullanım Koşulları</a>
+            <a href="/gizlilik-politikasi">Gizlilik Politikası</a>
+            <a href="/cerez-politikasi">Çerezler</a>
+            <a href="/iletisim">Yardım & Destek</a>
+            <a href="/sss">S.S.S.</a>
+        </div>
+    </div>
+    <div class="container copyright">
+        <div class="row">
+            <div class="col-md-6">
+                <p>&copy; @DateTime.UtcNow.Year <a asp-controller="Home" asp-action="Index">Şen Yapı İnşaat A.Ş.</a> Tüm Hakları Saklıdır.</p>
+            </div>
+            <div class="col-md-6">
+                <p>Builderz Tema Mimarisi ile ASP.NET Core MVC Entegrasyonu</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Footer End -->
+<a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>

@@ -1,0 +1,168 @@
+@model IEnumerable<ProjectInquiry>
+@{
+    ViewData["Title"] = "Proje Bilgi Talepleri Yönetimi";
+    var status = ViewBag.Status as string;
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle mr-1"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle mr-1"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-question-circle text-warning mr-2"></i> Proje Bilgi Talepleri (@Model.Count())
+            </h5>
+            <div class="d-flex align-items-center mt-2 mt-sm-0">
+                <a asp-action="Inquiries" asp-route-status="all" class="btn btn-sm mr-1 @(string.IsNullOrEmpty(status) || status == "all" ? "btn-dark font-weight-bold" : "btn-outline-secondary")">Tümü</a>
+                <a asp-action="Inquiries" asp-route-status="Beklemede" class="btn btn-sm mr-1 @(status == "Beklemede" ? "btn-warning text-dark font-weight-bold" : "btn-outline-warning text-dark")">Bekleyenler</a>
+                <a asp-action="Inquiries" asp-route-status="Cevaplandi" class="btn btn-sm mr-1 @(status == "Cevaplandi" ? "btn-info text-white font-weight-bold" : "btn-outline-info")">Cevaplananlar</a>
+                <a asp-action="Inquiries" asp-route-status="Tamamlandi" class="btn btn-sm @(status == "Tamamlandi" ? "btn-success font-weight-bold" : "btn-outline-success")">Tamamlananlar</a>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fa fa-inbox fa-3x mb-3 text-warning"></i>
+                    <p class="mb-0">Henüz bu kritere uyan bir bilgi talebi bulunmuyor.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Proje</th>
+                                <th>Kullanıcı / İletişim</th>
+                                <th>Mesaj / Tercih</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th class="text-right" style="width: 200px;">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@(item.Project?.Title ?? "Bilinmeyen Proje")</div>
+                                        <small class="text-muted">Proje ID: @item.ProjectId</small>
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold">@item.FullName</div>
+                                        <div class="small text-muted"><i class="fa fa-envelope mr-1"></i> @item.Email</div>
+                                        @if (!string.IsNullOrEmpty(item.Phone))
+                                        {
+                                            <div class="small text-muted"><i class="fa fa-phone mr-1"></i> @item.Phone</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.UserId))
+                                        {
+                                            <span class="badge badge-primary small">Kayıtlı Üye</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="text-dark small mb-1" style="max-width: 320px; white-space: normal;">
+                                            @item.Message
+                                        </div>
+                                        <span class="badge badge-light border small text-muted">
+                                            Kanal: @item.PreferredContactMethod
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(item.AdminReply))
+                                        {
+                                            <div class="mt-2 p-2 bg-light rounded small border-left border-warning" style="border-left-width: 3px !important;">
+                                                <strong class="text-warning">Cevap:</strong> @item.AdminReply
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Status == "Beklemede")
+                                        {
+                                            <span class="badge badge-warning text-dark px-2 py-1 font-weight-bold">Beklemede</span>
+                                        }
+                                        else if (item.Status == "Cevaplandi")
+                                        {
+                                            <span class="badge badge-info text-white px-2 py-1 font-weight-bold">Cevaplandı</span>
+                                        }
+                                        else if (item.Status == "Tamamlandi")
+                                        {
+                                            <span class="badge badge-success px-2 py-1 font-weight-bold">Tamamlandı</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary px-2 py-1">@item.Status</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <button type="button" class="btn btn-sm btn-warning font-weight-bold" data-toggle="modal" data-target="#replyModal-@item.Id">
+                                            <i class="fa fa-reply mr-1"></i> Yanıtla
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Reply Modal -->
+                                <div class="modal fade" id="replyModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-warning text-dark">
+                                                <h5 class="modal-title font-weight-bold">Bilgi Talebini Yanıtla (#@item.Id)</h5>
+                                                <button type="button" class="close text-dark" data-dismiss="modal"><span>&times;</span></button>
+                                            </div>
+                                            <form asp-action="ReplyInquiry" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <div class="modal-body">
+                                                    <div class="mb-3 p-3 bg-light rounded small">
+                                                        <div><strong>Kullanıcı:</strong> @item.FullName (@item.Email)</div>
+                                                        <div><strong>Proje:</strong> @(item.Project?.Title)</div>
+                                                        <div class="mt-1"><strong>Mesaj:</strong> @item.Message</div>
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold small">Cevabınız</label>
+                                                        <textarea name="replyText" class="form-control" rows="4" required placeholder="Kullanıcıya iletmek istediğiniz bilgilendirme metni...">@item.AdminReply</textarea>
+                                                        <small class="form-text text-muted">Kayıtlı kullanıcılara sistem içi bildirim otomatik gönderilir.</small>
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold small">Talep Durumu</label>
+                                                        <select name="newStatus" class="form-control">
+                                                            <option value="Cevaplandi" selected="@(item.Status == "Cevaplandi")">Cevaplandı</option>
+                                                            <option value="Tamamlandi" selected="@(item.Status == "Tamamlandi")">Tamamlandı</option>
+                                                            <option value="Beklemede" selected="@(item.Status == "Beklemede")">Beklemede</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">Kapat</button>
+                                                    <button type="submit" class="btn btn-warning font-weight-bold">Cevabı Kaydet</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>

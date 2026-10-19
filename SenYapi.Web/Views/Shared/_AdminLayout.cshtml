@@ -1,0 +1,906 @@
+@using Microsoft.AspNetCore.Identity
+@using SenYapi.Entity
+@using SenYapi.Core.Constants
+@inject UserManager<AppUser> UserManager
+@inject SenYapi.Business.Services.IPermissionService PermissionService
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    bool isSystemAdmin = User.IsInRole("SystemAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+    string userName = User.Identity?.Name ?? "Yönetici";
+    AppUser? currentUser = null;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+    }
+
+    bool canViewProjects = await PermissionService.HasPermissionAsync(User, Permissions.ProjectView);
+    bool canViewBlog = await PermissionService.HasPermissionAsync(User, Permissions.BlogView);
+    bool canViewComments = await PermissionService.HasPermissionAsync(User, Permissions.CommentView);
+    bool canViewContent = await PermissionService.HasPermissionAsync(User, Permissions.ContentView);
+    bool canViewMessages = await PermissionService.HasPermissionAsync(User, Permissions.MessageView);
+    bool canEditSettings = await PermissionService.HasPermissionAsync(User, Permissions.SettingsEdit);
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>@(ViewData["Title"] ?? "Yönetim Paneli") - Şen Yapı Admin</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="Şen Yapı İnşaat Yönetim Paneli" name="description">
+
+    <!-- Favicon -->
+    <link href="~/theme/builderz/img/favicon.ico" rel="icon">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 4 & FontAwesome -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Cropper.js (Görsel Kırpma ve 16:9 Oranlama) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet">
+
+    <!-- Admin Scoped Styles -->
+    <style>
+        /* Cropper Modal Üst Katman Kuralları */
+        #adminCropperModal {
+            z-index: 1070 !important;
+        }
+        .cropper-high-backdrop {
+            z-index: 1065 !important;
+        }
+        .cropper-container {
+            max-width: 100% !important;
+        }
+
+        :root {
+            --admin-primary: #030f27;
+            --admin-secondary: #0a193d;
+            --admin-accent: #fdbe33;
+            --admin-accent-hover: #e0a526;
+            --admin-bg: #f4f6f9;
+            --admin-text-dark: #1f2d3d;
+            --admin-text-muted: #869ab8;
+            --admin-sidebar-width: 260px;
+            --admin-topbar-height: 64px;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--admin-bg);
+            color: var(--admin-text-dark);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Layout Container */
+        .admin-layout-wrapper {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Sol Dikey Menü (Sidebar) */
+        .admin-sidebar {
+            width: var(--admin-sidebar-width);
+            background: var(--admin-primary);
+            color: #ffffff;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1045;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .admin-sidebar-header {
+            height: var(--admin-topbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            background: #020817;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-brand:hover {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .admin-brand i {
+            color: var(--admin-accent);
+            font-size: 1.35rem;
+            margin-right: 0.65rem;
+        }
+
+        .admin-sidebar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0.75rem 2rem 0.75rem;
+        }
+
+        /* Slim Scrollbar */
+        .admin-sidebar-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--admin-text-muted);
+            font-weight: 700;
+            padding: 0.75rem 0.75rem 0.35rem 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .admin-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.65rem 0.85rem;
+            color: #b0b9c6;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 3px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav-link i {
+            width: 22px;
+            font-size: 1.05rem;
+            margin-right: 0.75rem;
+            text-align: center;
+            color: #7b889b;
+            transition: color 0.2s ease;
+        }
+
+        .admin-nav-link:hover {
+            color: #ffffff;
+            background: rgba(253, 190, 51, 0.15);
+            text-decoration: none;
+        }
+
+        .admin-nav-link:hover i {
+            color: var(--admin-accent);
+        }
+
+        /* Aktif Menü Öğesi (Sarı Vurgulu) */
+        .admin-nav-link.active {
+            background-color: var(--admin-accent);
+            color: #030f27 !important;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(253, 190, 51, 0.35);
+        }
+
+        .admin-nav-link.active i {
+            color: #030f27 !important;
+        }
+
+        /* Sağ Ana Alan (Main Wrapper) */
+        .admin-main-wrapper {
+            margin-left: var(--admin-sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 100vh;
+            background: var(--admin-bg);
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Sade Üst Bar (Topbar) */
+        .admin-topbar {
+            height: var(--admin-topbar-height);
+            background: #ffffff;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .admin-topbar-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .admin-sidebar-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--admin-primary);
+            font-size: 1.25rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 1rem;
+            display: none;
+            transition: background-color 0.2s;
+        }
+
+        .admin-sidebar-toggle-btn:hover {
+            background: #eaedf2;
+        }
+
+        .admin-topbar-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--admin-primary);
+            margin: 0;
+        }
+
+        .admin-topbar-right {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Kullanıcı Avatar & Dropdown */
+        .admin-user-btn {
+            display: flex;
+            align-items: center;
+            background: transparent;
+            border: none;
+            padding: 0.35rem 0.65rem;
+            border-radius: 30px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .admin-user-btn:hover, .admin-user-btn:focus {
+            background: #f1f3f7;
+            text-decoration: none;
+        }
+
+        .admin-user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 0.6rem;
+            border: 2px solid var(--admin-accent);
+        }
+
+        .admin-user-initials {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--admin-primary);
+            color: var(--admin-accent);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            margin-right: 0.6rem;
+            border: 2px solid var(--admin-accent);
+        }
+
+        .admin-user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--admin-primary);
+            margin-right: 0.4rem;
+        }
+
+        /* İçerik Alanı */
+        .admin-content-container {
+            flex: 1;
+            padding: 1.5rem;
+            min-width: 0;
+        }
+
+        /* Sade Footer */
+        .admin-footer {
+            background: #ffffff;
+            border-top: 1px solid #e3e6f0;
+            padding: 0.85rem 1.5rem;
+            font-size: 0.85rem;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Mobil Karartma Arka Planı (Backdrop) */
+        .admin-sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(3, 15, 39, 0.6);
+            z-index: 1040;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Responsive Breakpoints */
+        @@media (max-width: 991.98px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+            .admin-main-wrapper {
+                margin-left: 0;
+            }
+            .admin-sidebar-toggle-btn {
+                display: inline-block;
+            }
+            .admin-sidebar-backdrop.show {
+                display: block;
+            }
+            .admin-content-container {
+                padding: 1rem;
+            }
+        }
+
+        /* Admin Görsel Önizleme ve En-Boy Oranları */
+        .admin-img-16-9 {
+            aspect-ratio: 16 / 9 !important;
+            object-fit: cover !important;
+            object-position: center;
+            border-radius: 4px;
+            display: block;
+        }
+        .admin-img-square {
+            aspect-ratio: 1 / 1 !important;
+            object-fit: cover !important;
+            object-position: center top;
+            border-radius: 50%;
+            display: block;
+        }
+        .admin-img-contain {
+            object-fit: contain !important;
+            background-color: #f8f9fa;
+        }
+        .admin-cover-preview-box {
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border-radius: 6px;
+            border: 2px dashed #fdbe33;
+            background-color: #fffdf5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-cover-preview-box img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center;
+            display: block;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body>
+    <div class="admin-layout-wrapper">
+        <!-- Mobil Karartma Overlay -->
+        <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
+
+        <!-- ======================= SOL DİKEY YÖNETİM MENÜSÜ ======================= -->
+        <aside class="admin-sidebar" id="adminSidebar" aria-label="Yönetim Menüsü">
+            <!-- Sidebar Header / Brand -->
+            <div class="admin-sidebar-header">
+                <a href="/Admin" class="admin-brand">
+                    <i class="fa fa-hard-hat"></i>
+                    <span>ŞEN YAPI</span>
+                    <span class="badge badge-warning text-dark ml-2 small font-weight-bold" style="font-size: 10px;">PANEL</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-link text-light d-lg-none" id="adminSidebarCloseBtn" aria-label="Menüyü Kapat">
+                    <i class="fa fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <!-- Sidebar Scrollable Navigation -->
+            <div class="admin-sidebar-scroll">
+                <div class="admin-nav-section-title">Genel</div>
+
+                <a asp-controller="Admin" asp-action="Index" class="admin-nav-link @(currentAction == "Index" ? "active" : "")">
+                    <i class="fa fa-tachometer-alt"></i>
+                    <span>Panel</span>
+                </a>
+
+                @if (canViewProjects || canViewBlog || canViewComments || canViewContent)
+                {
+                    <div class="admin-nav-section-title">İçerik & Portfolyo</div>
+
+                    @if (canViewProjects)
+                    {
+                        <a asp-controller="AdminProjects" asp-action="Projects" class="admin-nav-link @(currentAction == "Projects" ? "active" : "")">
+                            <i class="fa fa-building"></i>
+                            <span>Projeler</span>
+                        </a>
+                    }
+
+                    @if (canViewBlog)
+                    {
+                        <a asp-controller="AdminBlog" asp-action="Blog" class="admin-nav-link @(currentAction == "Blog" ? "active" : "")">
+                            <i class="fa fa-newspaper"></i>
+                            <span>Blog</span>
+                        </a>
+                    }
+
+                    @if (canViewComments)
+                    {
+                        <a asp-controller="AdminComments" asp-action="Comments" class="admin-nav-link @(currentAction == "Comments" ? "active" : "")">
+                            <i class="fa fa-comment-dots"></i>
+                            <span>Yorumlar</span>
+                        </a>
+                    }
+
+                    @if (canViewContent)
+                    {
+                        <a asp-controller="AdminManagement" asp-action="Services" class="admin-nav-link @(currentAction == "Services" ? "active" : "")">
+                            <i class="fa fa-tools"></i>
+                            <span>Hizmetler</span>
+                        </a>
+
+                        <a asp-controller="AdminManagement" asp-action="Team" class="admin-nav-link @(currentAction == "Team" ? "active" : "")">
+                            <i class="fa fa-id-badge"></i>
+                            <span>Ekip</span>
+                        </a>
+                    }
+                }
+
+                @if (canViewMessages || isSystemAdmin)
+                {
+                    <div class="admin-nav-section-title">Müşteri & Talepler</div>
+
+                    <a asp-controller="AdminInquiries" asp-action="Inquiries" class="admin-nav-link @(currentAction == "Inquiries" ? "active" : "")">
+                        <i class="fa fa-question-circle"></i>
+                        <span>Bilgi Talepleri</span>
+                    </a>
+
+                    <a asp-controller="AdminAppointments" asp-action="Appointments" class="admin-nav-link @(currentAction == "Appointments" ? "active" : "")">
+                        <i class="fa fa-calendar-check"></i>
+                        <span>Randevular</span>
+                    </a>
+
+                    <a asp-controller="AdminMessages" asp-action="Conversations" class="admin-nav-link @(currentAction == "Conversations" || currentAction == "ConversationDetail" ? "active" : "")">
+                        <i class="fa fa-comments"></i>
+                        <span>Kullanıcı Mesajları</span>
+                    </a>
+
+                    <a asp-controller="AdminMessages" asp-action="Messages" class="admin-nav-link @(currentAction == "Messages" || currentAction == "MessageDetail" ? "active" : "")">
+                        <i class="fa fa-envelope"></i>
+                        <span>İletişim Mesajları</span>
+                    </a>
+
+                    <a asp-controller="AdminMessages" asp-action="Subscribers" class="admin-nav-link @(currentAction == "Subscribers" ? "active" : "")">
+                        <i class="fa fa-newspaper"></i>
+                        <span>Bülten</span>
+                    </a>
+                }
+
+                <div class="admin-nav-section-title">Sistem & Güvenlik</div>
+
+                @if (canViewProjects || canViewBlog)
+                {
+                    <a asp-controller="AdminManagement" asp-action="Trash" class="admin-nav-link @(currentAction == "Trash" ? "active" : "")">
+                        <i class="fa fa-trash-alt"></i>
+                        <span>Çöp Kutusu</span>
+                    </a>
+                }
+
+                @if (isSystemAdmin)
+                {
+                    <a asp-controller="AdminUsers" asp-action="Users" class="admin-nav-link @(currentAction == "Users" ? "active" : "")">
+                        <i class="fa fa-user-shield"></i>
+                        <span>Kullanıcılar</span>
+                    </a>
+                }
+
+                @if (canEditSettings)
+                {
+                    <a asp-controller="AdminManagement" asp-action="Settings" class="admin-nav-link @(currentAction == "Settings" ? "active" : "")">
+                        <i class="fa fa-sliders-h"></i>
+                        <span>Ayarlar</span>
+                    </a>
+                }
+            </div>
+        </aside>
+
+        <!-- ======================= SAĞ ANA ALAN (MAIN WRAPPER) ======================= -->
+        <div class="admin-main-wrapper">
+            <!-- Sade Üst Bar (Topbar) -->
+            <header class="admin-topbar">
+                <div class="admin-topbar-left">
+                    <button type="button" class="admin-sidebar-toggle-btn" id="adminSidebarToggleBtn" aria-label="Menüyü Aç/Kapat">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <h1 class="admin-topbar-title">@(ViewData["Title"] ?? "Yönetim Paneli")</h1>
+                </div>
+
+                <div class="admin-topbar-right">
+                    <!-- Siteyi Gör Bağlantısı -->
+                    <a href="/" target="_blank" class="btn btn-sm btn-outline-dark font-weight-bold mr-3" title="Web Sitesini Yeni Sekmede Aç">
+                        <i class="fa fa-external-link-alt mr-1"></i> Siteyi Gör
+                    </a>
+
+                    <!-- Hızlı Talep Bildirimi -->
+                    <a asp-controller="AdminInquiries" asp-action="Inquiries" asp-route-status="Beklemede" class="btn btn-sm btn-light text-dark mr-3" title="Bekleyen Bilgi Talepleri">
+                        <i class="fa fa-bell text-warning"></i>
+                    </a>
+
+                    <!-- Kullanıcı Profili Dropdown (Yalnızca Kullanıcı Adı Gösterilir, E-posta Gizlidir) -->
+                    <div class="dropdown">
+                        <button class="admin-user-btn dropdown-toggle" type="button" id="adminUserDropdownBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            @if (!string.IsNullOrEmpty(currentUser?.ProfilePictureUrl))
+                            {
+                                <img src="@Url.Content(currentUser.ProfilePictureUrl)" alt="@userName" class="admin-user-avatar" />
+                            }
+                            else
+                            {
+                                <div class="admin-user-initials">
+                                    @(userName.Length > 0 ? userName.Substring(0, 1).ToUpper() : "A")
+                                </div>
+                            }
+                            <span class="admin-user-name">@userName</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow border-0 mt-2" aria-labelledby="adminUserDropdownBtn" style="min-width: 200px;">
+                            <div class="px-3 py-2 bg-light border-bottom">
+                                <div class="font-weight-bold text-dark">@userName</div>
+                                <span class="badge badge-warning text-dark font-weight-bold">@(isAdmin ? "Yönetici (Admin)" : "Editör")</span>
+                            </div>
+                            <a class="dropdown-item py-2" href="/hesap/profil">
+                                <i class="fa fa-user-cog text-warning mr-2"></i> Profil & Ayarlar
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <form action="/cikis-yap" method="post" class="px-2 py-1 m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-sm btn-block font-weight-bold text-white shadow-sm" style="background-color: #dc3545; border-color: #dc3545;">
+                                    <i class="fa fa-sign-out-alt mr-1"></i> Güvenli Çıkış
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- İçerik Alanı -->
+            <main class="admin-content-container">
+                @RenderBody()
+            </main>
+
+            <!-- Sade Admin Footer -->
+            <footer class="admin-footer">
+                <div>
+                    <strong>Şen Yapı İnşaat A.Ş.</strong> &copy; 2026 Tüm Hakları Saklıdır.
+                </div>
+                <div>
+                    <span class="badge badge-secondary">ASP.NET Core MVC &bull; Yönetim Portalı</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- JavaScript Kütüphaneleri -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Sidebar Mobil Toggle & Etkileşim Scripti -->
+    <script>
+        $(document).ready(function () {
+            var $sidebar = $('#adminSidebar');
+            var $backdrop = $('#adminSidebarBackdrop');
+
+            function toggleSidebar() {
+                $sidebar.toggleClass('show');
+                $backdrop.toggleClass('show');
+            }
+
+            function closeSidebar() {
+                $sidebar.removeClass('show');
+                $backdrop.removeClass('show');
+            }
+
+            $('#adminSidebarToggleBtn').on('click', function (e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            $('#adminSidebarCloseBtn').on('click', function (e) {
+                closeSidebar();
+            });
+
+            $backdrop.on('click', function () {
+                closeSidebar();
+            });
+
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape' && $sidebar.hasClass('show')) {
+                    closeSidebar();
+                }
+            });
+
+            $(window).on('resize', function () {
+                if ($(window).width() >= 992) {
+                    closeSidebar();
+                }
+            });
+        });
+    </script>
+
+    <!-- Cropper.js JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+    <!-- Admin Universal Image Cropper Modal (16:9 Kart Uyumlu) -->
+    <div class="modal fade" id="adminCropperModal" tabindex="-1" role="dialog" aria-labelledby="adminCropperModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header bg-dark text-white py-2 px-3">
+                    <h6 class="modal-title font-weight-bold text-white mb-0" id="adminCropperModalLabel">
+                        <i class="fa fa-crop-alt text-warning mr-2"></i> Görseli Kırp ve Hizala (Vitrin Görünümü)
+                    </h6>
+                    <button type="button" class="close text-white" id="adminCropperCloseBtn" aria-label="Kapat">&times;</button>
+                </div>
+                <div class="modal-body p-3" style="background-color: #f8f9fa;">
+                    <div class="alert alert-info py-2 px-3 small mb-2 d-flex align-items-center border-0 shadow-sm" style="background-color: #e8f4fd; color: #0c5460;">
+                        <i class="fa fa-info-circle mr-2 fa-lg text-info"></i>
+                        <span>Çerçeveyi hareket ettirerek sitedeki kartlarda <strong>tam olarak hangi alanın</strong> görüneceğini seçebilirsiniz.</span>
+                    </div>
+
+                    <!-- Kırpma Alanı (Karanlık zemin ile odaklama) -->
+                    <div style="height: 420px; background-color: #1a1a1a; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px;">
+                        <img id="adminCropperImage" src="" style="max-width: 100%; display: block;" alt="Kırpılacak Görsel" />
+                    </div>
+
+                    <!-- Araç Çubuğu -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <div class="btn-group btn-group-sm mb-2 mb-md-0" role="group">
+                            <button type="button" class="btn btn-outline-secondary" id="cropperZoomIn" title="Yakınlaştır"><i class="fa fa-search-plus"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" id="cropperZoomOut" title="Uzaklaştır"><i class="fa fa-search-minus"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" id="cropperRotateLeft" title="Sola Döndür"><i class="fa fa-undo"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" id="cropperRotateRight" title="Sağa Döndür"><i class="fa fa-redo"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" id="cropperReset" title="Sıfırla"><i class="fa fa-sync-alt mr-1"></i> Sıfırla</button>
+                        </div>
+                        <div class="btn-group btn-group-sm mb-2 mb-md-0" role="group">
+                            <button type="button" class="btn btn-warning font-weight-bold active cropper-ratio-btn" data-ratio="1.7777777777777777">16:9 (Vitrin)</button>
+                            <button type="button" class="btn btn-outline-dark cropper-ratio-btn" data-ratio="1.3333333333333333">4:3</button>
+                            <button type="button" class="btn btn-outline-dark cropper-ratio-btn" data-ratio="1">1:1 (Kare)</button>
+                            <button type="button" class="btn btn-outline-dark cropper-ratio-btn" data-ratio="NaN">Serbest</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2 px-3 bg-white d-flex justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cropperUseOriginalBtn">
+                            <i class="fa fa-check mr-1"></i> Orijinalini Kırpmadan Kullan
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-secondary mr-2" id="cropperCancelBtn">İptal</button>
+                        <button type="button" class="btn btn-sm btn-warning font-weight-bold px-3 shadow-sm" id="cropperApplyBtn" style="background-color: #fdbe33; color: #030f27; border: none;">
+                            <i class="fa fa-crop-alt mr-1"></i> Kırp ve Uygula
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Universal Cropper Script -->
+    <script>
+        (function () {
+            var cropperInstance = null;
+            var activeFileInput = null;
+            var activeOriginalFile = null;
+            var isApplyingCrop = false;
+
+            // Modal z-index yönetimi (alttaki modalın üstünde temiz açılsın)
+            $('#adminCropperModal').on('show.bs.modal', function () {
+                setTimeout(function () {
+                    $('.modal-backdrop').not('.cropper-high-backdrop').last().addClass('cropper-high-backdrop');
+                }, 10);
+            });
+
+            // Modal açıldığında Cropper nesnesini başlat
+            $('#adminCropperModal').on('shown.bs.modal', function () {
+                var cropImg = document.getElementById('adminCropperImage');
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                }
+                cropperInstance = new Cropper(cropImg, {
+                    aspectRatio: 16 / 9,
+                    viewMode: 1, // Kırpma kutusu resmin dışına taşamaz
+                    autoCropArea: 0.95,
+                    responsive: true,
+                    movable: true,
+                    zoomable: true,
+                    rotatable: true,
+                    scalable: false
+                });
+            });
+
+            // Modal kapandığında temizlik
+            $('#adminCropperModal').on('hidden.bs.modal', function () {
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+                document.getElementById('adminCropperImage').src = '';
+                // Altta başka açık modal varsa body'nin kaydırma çubuğunu kilitlemeye devam et
+                if ($('.modal.show').length > 0) {
+                    $('body').addClass('modal-open');
+                }
+            });
+
+            // Buton Olayları (Zoom, Rotate, Reset, Ratio)
+            $('#cropperZoomIn').on('click', function () { if (cropperInstance) cropperInstance.zoom(0.1); });
+            $('#cropperZoomOut').on('click', function () { if (cropperInstance) cropperInstance.zoom(-0.1); });
+            $('#cropperRotateLeft').on('click', function () { if (cropperInstance) cropperInstance.rotate(-90); });
+            $('#cropperRotateRight').on('click', function () { if (cropperInstance) cropperInstance.rotate(90); });
+            $('#cropperReset').on('click', function () { if (cropperInstance) cropperInstance.reset(); });
+
+            $('.cropper-ratio-btn').on('click', function () {
+                $('.cropper-ratio-btn').removeClass('btn-warning font-weight-bold active').addClass('btn-outline-dark');
+                $(this).removeClass('btn-outline-dark').addClass('btn-warning font-weight-bold active');
+                var ratio = parseFloat($(this).data('ratio'));
+                if (cropperInstance) {
+                    cropperInstance.setAspectRatio(isNaN(ratio) ? NaN : ratio);
+                }
+            });
+
+            // Orijinalini Kırpmadan Kullan
+            $('#cropperUseOriginalBtn').on('click', function () {
+                $('#adminCropperModal').modal('hide');
+            });
+
+            // İptal (Seçimi geri al)
+            $('#cropperCancelBtn, #adminCropperCloseBtn').on('click', function () {
+                if (activeFileInput) {
+                    activeFileInput.value = '';
+                    var previewContainerId = $(activeFileInput).data('container-id');
+                    if (previewContainerId) {
+                        $('#' + previewContainerId).addClass('d-none').removeClass('d-flex');
+                    }
+                    if (activeFileInput.id === 'addBlogImageInput') {
+                        $('#addBlogPreviewContainer').addClass('d-none').removeClass('d-flex');
+                    } else if (activeFileInput.id === 'addImageFile') {
+                        $('#addCoverPreviewContainer').addClass('d-none').removeClass('d-flex');
+                    }
+                }
+                $('#adminCropperModal').modal('hide');
+            });
+
+            // Kırp ve Uygula
+            $('#cropperApplyBtn').on('click', function () {
+                if (!cropperInstance || !activeFileInput) return;
+
+                var canvas = cropperInstance.getCroppedCanvas({
+                    maxWidth: 1920,
+                    maxHeight: 1080,
+                    imageSmoothingQuality: 'high'
+                });
+
+                if (!canvas) {
+                    alert('Görsel kırpılırken bir sorun oluştu.');
+                    return;
+                }
+
+                var mimeType = (activeOriginalFile && activeOriginalFile.type === 'image/png') ? 'image/png' : 'image/jpeg';
+                var extension = mimeType === 'image/png' ? '.png' : '.jpg';
+                var originalName = (activeOriginalFile && activeOriginalFile.name) ? activeOriginalFile.name : 'gorsel';
+                var lastDot = originalName.lastIndexOf('.');
+                var baseName = lastDot > 0 ? originalName.substring(0, lastDot) : originalName;
+                var newFileName = baseName + '-16-9' + extension;
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        alert('Kırpılan görsel dosyaya dönüştürülemedi.');
+                        return;
+                    }
+
+                    try {
+                        isApplyingCrop = true;
+                        var croppedFile = new File([blob], newFileName, { type: mimeType, lastModified: Date.now() });
+                        var dt = new DataTransfer();
+                        dt.items.add(croppedFile);
+                        activeFileInput.files = dt.files;
+
+                        var croppedDataUrl = canvas.toDataURL(mimeType);
+
+                        // Form içi canlı önizlemeleri güncelle
+                        var previewId = $(activeFileInput).data('preview-id');
+                        var containerId = $(activeFileInput).data('container-id');
+                        var nameId = $(activeFileInput).data('name-id');
+
+                        if (previewId) {
+                            $('#' + previewId).attr('src', croppedDataUrl);
+                        }
+                        if (containerId) {
+                            $('#' + containerId).removeClass('d-none').addClass('d-flex');
+                        }
+                        if (nameId) {
+                            $('#' + nameId).html('<span class="text-success"><i class="fa fa-crop-alt mr-1"></i> 16:9 Kırpıldı:</span> ' + newFileName + ' (' + (blob.size / 1024).toFixed(1) + ' KB)');
+                        }
+
+                        // Blog ve Proje ekleme modalındaki standart alanlar için özel kontrol
+                        if (activeFileInput.id === 'addBlogImageInput') {
+                            $('#addBlogPreviewImg').attr('src', croppedDataUrl);
+                            $('#addBlogFileName').html('<span class="text-success"><i class="fa fa-crop-alt mr-1"></i> 16:9 Kırpıldı:</span> ' + newFileName + ' (' + (blob.size / 1024).toFixed(1) + ' KB)');
+                            $('#addBlogPreviewContainer').removeClass('d-none').addClass('d-flex');
+                        } else if (activeFileInput.id === 'addImageFile') {
+                            $('#addCoverPreview').attr('src', croppedDataUrl);
+                            $('#addCoverFileName').html('<span class="text-success"><i class="fa fa-crop-alt mr-1"></i> 16:9 Kırpıldı:</span> ' + newFileName + ' (' + (blob.size / 1024).toFixed(1) + ' KB)');
+                            $('#addCoverPreviewContainer').removeClass('d-none').addClass('d-flex');
+                        }
+                    } catch (e) {
+                        console.error('Kırpılan dosya atanamadı:', e);
+                    } finally {
+                        setTimeout(function () { isApplyingCrop = false; }, 400);
+                    }
+
+                    $('#adminCropperModal').modal('hide');
+                }, mimeType, 0.92);
+            });
+
+            // Evrensel Kapak Resmi Seçim Dinleyicisi
+            // Admin panelindeki tüm kapak görseli input'ları tetikler
+            $(document).on('change', 'input[type="file"][name="imageFile"], .cover-image-picker, .blog-image-input, .enable-cropper, #addBlogImageInput, #addImageFile', function (e) {
+                if (isApplyingCrop) return;
+                if (!this.files || !this.files[0]) return;
+
+                var file = this.files[0];
+                if (!file.type || !file.type.startsWith('image/')) return;
+                if (file.type === 'image/svg+xml') return; // SVG dosyalarını kırpıcıya sokma
+
+                activeFileInput = this;
+                activeOriginalFile = file;
+
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    var cropImg = document.getElementById('adminCropperImage');
+                    cropImg.src = evt.target.result;
+
+                    // 16:9 butonunu varsayılan olarak aktif yap
+                    $('.cropper-ratio-btn').removeClass('btn-warning font-weight-bold active').addClass('btn-outline-dark');
+                    $('.cropper-ratio-btn[data-ratio="1.7777777777777777"]').removeClass('btn-outline-dark').addClass('btn-warning font-weight-bold active');
+
+                    $('#adminCropperModal').modal({ backdrop: 'static', keyboard: false });
+                };
+                reader.readAsDataURL(file);
+            });
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

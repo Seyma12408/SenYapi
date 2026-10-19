@@ -1,0 +1,397 @@
+@model IEnumerable<BlogPost>
+@{
+    ViewData["Title"] = "Blog Yönetimi";
+    var search = ViewBag.Search as string;
+    var currentCat = ViewBag.Category as string;
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-check-circle mr-2"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+
+    <!-- Search & Filter Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" asp-controller="AdminBlog" asp-action="Blog" class="row align-items-center">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Yazı başlığı veya içeriğinde ara..." value="@search" />
+                        <div class="input-group-append">
+                            <button class="btn btn-warning" type="submit"><i class="fa fa-search"></i> Ara</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                    <input type="text" name="category" class="form-control" placeholder="Kategoriye göre filtrele" value="@currentCat" />
+                </div>
+                <div class="col-md-3 text-md-right">
+                    @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(currentCat))
+                    {
+                        <a asp-controller="AdminBlog" asp-action="Blog" class="btn btn-outline-secondary btn-sm mr-2">Temizle</a>
+                    }
+                    <button type="button" class="btn btn-warning btn-sm font-weight-bold" data-toggle="modal" data-target="#addPostModal">
+                        <i class="fa fa-plus-circle mr-1"></i> Yeni Yazı
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Posts Table -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-newspaper text-success mr-2"></i> Blog Yazıları (@Model.Count())
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th style="width: 90px;">Görsel</th>
+                            <th>Yazı Başlığı</th>
+                            <th>Kategori</th>
+                            <th>Kalıcı Bağlantı</th>
+                            <th>Okunma</th>
+                            <th>Yorumlar</th>
+                            <th>Durum</th>
+                            <th class="text-right" style="min-width: 230px;">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@Url.Content(item.ImageUrl)" alt="@item.Title" class="admin-img-16-9 shadow-sm" style="width: 72px;" />
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@item.Title</div>
+                                        <small class="text-muted d-block text-truncate" style="max-width: 250px;">@item.Summary</small>
+                                    </td>
+                                    <td><span class="badge badge-light border">@item.Category</span></td>
+                                    <td><code class="small text-muted">/blog/@item.Slug</code></td>
+                                    <td><span class="badge badge-light border"><i class="fa fa-eye mr-1"></i> @item.ViewCount</span></td>
+                                    <td>
+                                        <span class="badge badge-light border">
+                                            <i class="fa fa-comments mr-1"></i> @(item.Comments?.Count ?? 0)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (item.IsPublished)
+                                        {
+                                            <span class="badge badge-success">Yayında</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">Taslak</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="d-inline-flex align-items-center">
+                                            <button type="button" class="btn btn-outline-info btn-sm mr-1" data-toggle="modal" data-target="#blogDetailModal-@item.Id" title="Ayrıntıları Göster">
+                                                <i class="fa fa-eye mr-1"></i> Detay
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning btn-sm mr-1" data-toggle="modal" data-target="#blogEditModal-@item.Id" title="Düzenle">
+                                                <i class="fa fa-edit mr-1"></i> Düzenle
+                                            </button>
+                                            <a asp-controller="Blog" asp-action="Detail" asp-route-slug="@item.Slug" target="_blank" class="btn btn-outline-secondary btn-sm mr-1" title="Sitede Görüntüle">
+                                                <i class="fa fa-external-link-alt"></i>
+                                            </a>
+                                            <form asp-controller="AdminBlog" asp-action="DeletePost" asp-route-id="@item.Id" method="post" class="d-inline m-0" onsubmit="return confirm('Bu blog yazısını ve bağlı yorumları silmek istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Yazıyı Sil">
+                                                    <i class="fa fa-trash mr-1"></i> Sil
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <!-- Blog Detail Modal -->
+                                        <div class="modal fade text-left" id="blogDetailModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title text-white">
+                                                            <i class="fa fa-newspaper text-warning mr-2"></i> @item.Title
+                                                        </h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="text-center mb-3">
+                                                            <div class="admin-cover-preview-box mx-auto" style="max-width: 380px;">
+                                                                <img src="@Url.Content(item.ImageUrl)" alt="@item.Title" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-md-3"><strong>Kategori:</strong> <span class="badge badge-light border">@item.Category</span></div>
+                                                            <div class="col-md-3"><strong>Yazar:</strong> @item.Author</div>
+                                                            <div class="col-md-3"><strong>Tarih:</strong> @item.CreatedAt.ToString("dd.MM.yyyy")</div>
+                                                            <div class="col-md-3"><strong>Okunma:</strong> @item.ViewCount</div>
+                                                        </div>
+                                                        <p class="mb-1"><strong>Özet:</strong></p>
+                                                        <div class="p-2 bg-light rounded text-muted mb-3 font-italic">@item.Summary</div>
+                                                        <p class="mb-1"><strong>İçerik:</strong></p>
+                                                        <div class="p-3 bg-light rounded text-dark" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">@item.Content</div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Kapat</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Blog Edit Modal -->
+                                        <div class="modal fade text-left" id="blogEditModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title text-white">
+                                                            <i class="fa fa-edit text-warning mr-2"></i> Blog Yazısını Düzenle
+                                                        </h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <form asp-controller="AdminBlog" asp-action="UpdatePost" method="post" enctype="multipart/form-data">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="Id" value="@item.Id" />
+                                                        <div class="modal-body">
+                                                            @{
+                                                                var isThisEditFailed = (ViewBag.FailedModalId as string) == $"blogEditModal-{item.Id}";
+                                                                var editPreserved = isThisEditFailed ? ViewBag.PreservedModel as BlogPost : null;
+                                                                var editTitle = isThisEditFailed && editPreserved != null ? editPreserved.Title : item.Title;
+                                                                var editCategory = isThisEditFailed && editPreserved != null ? editPreserved.Category : item.Category;
+                                                                var editSlug = isThisEditFailed && editPreserved != null ? editPreserved.Slug : item.Slug;
+                                                                var editSummary = isThisEditFailed && editPreserved != null ? editPreserved.Summary : item.Summary;
+                                                                var editContent = isThisEditFailed && editPreserved != null ? editPreserved.Content : item.Content;
+                                                                var editMetaTitle = isThisEditFailed && editPreserved != null ? editPreserved.MetaTitle : item.MetaTitle;
+                                                                var editMetaDescription = isThisEditFailed && editPreserved != null ? editPreserved.MetaDescription : item.MetaDescription;
+                                                                var editIsPublished = isThisEditFailed && editPreserved != null ? editPreserved.IsPublished : item.IsPublished;
+                                                            }
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark">Yazı Başlığı *</label>
+                                                                <input type="text" name="Title" class="form-control" value="@editTitle" required />
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark">Kategori *</label>
+                                                                    <input type="text" name="Category" class="form-control" value="@editCategory" required />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark">Özel Kalıcı Bağlantı (Slug)</label>
+                                                                    <input type="text" name="Slug" class="form-control @(isThisEditFailed ? "is-invalid" : "")" value="@editSlug" />
+                                                                    @if (isThisEditFailed && !string.IsNullOrEmpty(ViewBag.SlugError as string))
+                                                                    {
+                                                                        <div class="text-danger small font-weight-bold mt-1">@ViewBag.SlugError</div>
+                                                                    }
+                                                                    <small class="text-muted d-block mt-1">Değişirse eski URL otomatik olarak 301 yönlendirilir.</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark">Kapak Fotoğrafı</label>
+                                                                <div class="d-flex align-items-center mb-2">
+                                                                    <div class="admin-cover-preview-box mr-3" style="width: 140px; min-width: 140px;">
+                                                                        <img id="editBlogPreview-@item.Id" src="@Url.Content(item.ImageUrl)" alt="@item.Title" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="btn btn-sm btn-outline-warning text-dark font-weight-bold mb-1" style="cursor: pointer;">
+                                                                            <i class="fa fa-upload mr-1"></i> Yeni Kapak Seç
+                                                                            <input type="file" name="imageFile" class="d-none blog-image-input" data-preview-id="editBlogPreview-@item.Id" data-name-id="editBlogFileName-@item.Id" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                                                        </label>
+                                                                        <small class="text-muted d-block text-truncate" style="max-width: 220px;" id="editBlogFileName-@item.Id">Mevcut: @System.IO.Path.GetFileName(item.ImageUrl)</small>
+                                                                        <span class="badge badge-light border text-muted" style="font-size: 10px;">16:9 Oranında Gösterilir</span>
+                                                                    </div>
+                                                                </div>
+                                                                <input type="hidden" name="ImageUrl" value="@item.ImageUrl" />
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark">Özet Bilgi *</label>
+                                                                <input type="text" name="Summary" class="form-control" value="@editSummary" required />
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark">Makale İçeriği *</label>
+                                                                <textarea name="Content" class="form-control" rows="6" required>@editContent</textarea>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark">SEO Başlığı (Meta Title)</label>
+                                                                    <input type="text" name="MetaTitle" class="form-control" value="@editMetaTitle" />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark">SEO Açıklaması (Meta Description)</label>
+                                                                    <input type="text" name="MetaDescription" class="form-control" value="@editMetaDescription" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group mb-3">
+                                                                <div class="custom-control custom-checkbox">
+                                                                    <input type="checkbox" class="custom-control-input" id="isPublished-@item.Id" name="IsPublished" value="true" @(editIsPublished ? "checked" : "") />
+                                                                    <label class="custom-control-label font-weight-bold text-dark" for="isPublished-@item.Id">Yayında / Aktif</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                                                            <button type="submit" class="btn btn-warning font-weight-bold">Değişiklikleri Kaydet</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">Henüz kayıtlı blog yazısı bulunmuyor.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<!-- Add Post Modal -->
+<div class="modal fade" id="addPostModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fa fa-plus-circle text-warning mr-2"></i> Yeni Blog Yazısı Ekle
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form asp-controller="AdminBlog" asp-action="AddPost" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    @{
+                        var isAddFailed = (ViewBag.FailedModalId as string) == "addPostModal";
+                        var addPreserved = isAddFailed ? ViewBag.PreservedModel as BlogPost : null;
+                    }
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Yazı Başlığı *</label>
+                        <input type="text" name="Title" class="form-control" placeholder="Örn: 2026 İnşaat Trendleri" value="@(addPreserved?.Title ?? "")" required />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark">Kategori *</label>
+                            <input type="text" name="Category" class="form-control" placeholder="Örn: Mimarlık, Deprem Güvenliği" value="@(addPreserved?.Category ?? "")" required />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark">Özel Kalıcı Bağlantı (Slug - Opsiyonel)</label>
+                            <input type="text" name="Slug" class="form-control @(isAddFailed ? "is-invalid" : "")" placeholder="2026-insaat-trendleri" value="@(addPreserved?.Slug ?? "")" />
+                            @if (isAddFailed && !string.IsNullOrEmpty(ViewBag.SlugError as string))
+                            {
+                                <div class="text-danger small font-weight-bold mt-1">@ViewBag.SlugError</div>
+                            }
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Kapak Fotoğrafı Yükle</label>
+                        <input type="file" name="imageFile" id="addBlogImageInput" class="form-control-file border p-1 rounded" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                        <div id="addBlogPreviewContainer" class="d-none align-items-center mt-2 p-2 rounded border border-warning" style="background-color: #fffdf5;">
+                            <div class="admin-cover-preview-box mr-3" style="width: 130px; min-width: 130px;">
+                                <img id="addBlogPreviewImg" src="#" alt="Önizleme" />
+                            </div>
+                            <div>
+                                <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-1">
+                                    <i class="fa fa-eye mr-1"></i> 16:9 Önizleme
+                                </span>
+                                <small class="text-dark d-block font-weight-bold text-truncate" style="max-width: 240px;" id="addBlogFileName"></small>
+                                <small class="text-muted">Görsel sitede bu 16:9 oranında gösterilecektir.</small>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Maksimum 5MB (JPG, PNG, WEBP - Önerilen oran: 16:9)</small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Özet Bilgi *</label>
+                        <input type="text" name="Summary" class="form-control" placeholder="Ana sayfada ve blog listesinde görünecek kısa özet..." value="@(addPreserved?.Summary ?? "")" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark">Makale İçeriği *</label>
+                        <textarea name="Content" class="form-control" rows="6" placeholder="Detaylı makale içeriği..." required>@(addPreserved?.Content ?? "")</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark">SEO Başlığı (Meta Title)</label>
+                            <input type="text" name="MetaTitle" class="form-control" placeholder="Yazı Başlığı | Şen Yapı Blog" value="@(addPreserved?.MetaTitle ?? "")" />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark">SEO Açıklaması (Meta Description)</label>
+                            <input type="text" name="MetaDescription" class="form-control" placeholder="Arama motoru kısa açıklaması" value="@(addPreserved?.MetaDescription ?? "")" />
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="addIsPublished" name="IsPublished" value="true" @(addPreserved == null || addPreserved.IsPublished ? "checked" : "") />
+                            <label class="custom-control-label font-weight-bold text-dark" for="addIsPublished">Hemen Yayına Al</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold">Yayınla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Yeni Blog Ekleme Görsel Önizleme
+            $('#addBlogImageInput').on('change', function () {
+                if (this.files && this.files[0]) {
+                    var file = this.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#addBlogPreviewImg').attr('src', e.target.result);
+                        $('#addBlogFileName').text(file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+                        $('#addBlogPreviewContainer').removeClass('d-none').addClass('d-flex');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Blog Düzenleme Görsel Önizleme
+            $('.blog-image-input').on('change', function () {
+                var previewId = $(this).data('preview-id');
+                var nameId = $(this).data('name-id');
+                if (this.files && this.files[0]) {
+                    var file = this.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#' + previewId).attr('src', e.target.result);
+                        if (nameId) {
+                            $('#' + nameId).text(file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+    @if (!string.IsNullOrEmpty(ViewBag.FailedModalId as string))
+    {
+        <script>
+            $(document).ready(function () {
+                $('#@ViewBag.FailedModalId').modal('show');
+            });
+        </script>
+    }
+}

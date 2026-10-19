@@ -1,0 +1,173 @@
+@model LoginViewModel
+@inject ICaptchaService CaptchaService
+@{
+    ViewData["Title"] = "Giriş Yap";
+}
+
+<partial name="_PageHeader" model='("Kullanıcı Girişi", "Giriş Yap")' />
+
+<div class="auth-wrapper py-5" style="background: #f4f6f9; min-height: 550px;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-5">
+                <div class="card border-0 shadow-sm rounded-lg bg-white overflow-hidden" style="border-radius: 12px; border: 1px solid #e9ecef;">
+                    
+                    <div class="card-body p-4 p-md-5">
+                        <!-- Üst Seçenekler (Giriş Yap / Üye Ol) -->
+                        <div class="d-flex mb-4 p-1 rounded-pill" style="background-color: #f1f3f6;">
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-sm flex-fill font-weight-bold rounded-pill text-center shadow-sm" style="background: #030f27; color: #fdbe33; padding: 10px 16px; border: none;">
+                                Giriş Yap
+                            </a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-sm flex-fill font-weight-bold rounded-pill text-center text-muted" style="color: #555 !important; padding: 10px 16px; border: none; text-decoration: none;">
+                                Üye Ol
+                            </a>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <h4 class="font-weight-bold mb-1" style="color: #030f27; letter-spacing: -0.3px;">Hesabınıza Giriş Yapın</h4>
+                            <p class="text-muted small mb-0">Kullanıcı adınız veya kayıtlı e-posta adresinizle devam edin</p>
+                        </div>
+
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show mb-4 py-2" role="alert">
+                                <i class="fa fa-exclamation-circle mr-2"></i>
+                                <div asp-validation-summary="ModelOnly" class="d-inline small font-weight-bold"></div>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Kapat">&times;</button>
+                            </div>
+                        }
+
+                        <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" id="loginForm" autocomplete="on">
+                            @Html.AntiForgeryToken()
+
+                            <!-- 1. Kullanıcı Adı veya E-Posta -->
+                            <div class="form-group mb-3">
+                                <label asp-for="UsernameOrEmail" class="font-weight-bold text-dark mb-1" style="font-size: 13px;">Kullanıcı Adı veya E-Posta</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light border-right-0" style="color: #030f27; border-color: #ced4da;">
+                                            <i class="fa fa-user"></i>
+                                        </span>
+                                    </div>
+                                    <input asp-for="UsernameOrEmail" class="form-control auth-input border-left-0" placeholder="Kullanıcı adı veya e-posta" style="height: 48px; color: #212529 !important; font-size: 14px; font-weight: 500;" autocomplete="username" />
+                                </div>
+                                <span asp-validation-for="UsernameOrEmail" class="text-danger small mt-1 d-block font-weight-bold"></span>
+                            </div>
+
+                            <!-- 2. Şifre (DOM sırasında doğrudan kullanıcı adı/e-postadan hemen sonra gelir) -->
+                            <div class="form-group mb-2">
+                                <label asp-for="Password" class="font-weight-bold text-dark mb-1" style="font-size: 13px;">Şifre</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light border-right-0" style="color: #030f27; border-color: #ced4da;">
+                                            <i class="fa fa-key"></i>
+                                        </span>
+                                    </div>
+                                    <input asp-for="Password" type="password" id="loginPassword" class="form-control auth-input border-left-0 border-right-0" placeholder="••••••••" style="height: 48px; color: #212529 !important; font-size: 14px; font-weight: 500;" autocomplete="current-password" />
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary border-left-0" type="button" id="togglePasswordBtn" tabindex="-1" aria-label="Şifreyi Göster veya Gizle" style="border-color: #ced4da; background: #fff; color: #6c757d;">
+                                            <i class="fa fa-eye" id="togglePasswordIcon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small mt-1 d-block font-weight-bold"></span>
+                            </div>
+
+                            <!-- 3. Şifre Kutusu Altı: Beni Hatırla (Solda) & Şifremi Unuttum (Sağda) -->
+                            <div class="d-flex justify-content-between align-items-center mb-4 pt-1">
+                                <div class="custom-control custom-checkbox">
+                                    <input asp-for="RememberMe" class="custom-control-input" id="rememberMeCheck" />
+                                    <label class="custom-control-label text-secondary small font-weight-bold cursor-pointer" for="rememberMeCheck">Beni Hatırla</label>
+                                </div>
+                                <div>
+                                    <a asp-controller="Account" asp-action="ForgotPassword" class="small font-weight-bold" style="color: #030f27; text-decoration: underline;">
+                                        Şifremi Unuttum?
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- 3.5. Cloudflare Turnstile CAPTCHA (Her zaman görünür) -->
+                            <div class="form-group mb-3 text-center">
+                                <div id="cf-turnstile-login" class="cf-turnstile d-inline-block" data-sitekey="@CaptchaService.GetSiteKey()" data-action="login" data-theme="light"></div>
+                            </div>
+
+                            <!-- 4. Giriş Butonu -->
+                            <button type="submit" id="btnLoginSubmit" class="btn btn-block py-3 font-weight-bold shadow-sm" style="background: #fdbe33; color: #030f27; font-size: 15px; letter-spacing: 0.5px; border-radius: 8px; border: none; transition: all 0.2s ease;">
+                                <i class="fa fa-sign-in-alt mr-2"></i> GİRİŞ YAP
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <span class="text-muted small">Henüz bir hesabınız yok mu?</span>
+                            <a asp-controller="Account" asp-action="Register" class="small font-weight-bold ml-1" style="color: #030f27; text-decoration: underline;">
+                                Hemen Kayıt Olun
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script>
+        $(document).ready(function () {
+            // Şifre Göster / Gizle
+            $('#togglePasswordBtn').on('click', function (e) {
+                e.preventDefault();
+                var passwordField = $('#loginPassword');
+                var icon = $('#togglePasswordIcon');
+                if (passwordField.attr('type') === 'password') {
+                    passwordField.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordField.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Tab geçişinde henüz dokunulmamış boş alanların erken validasyon hatası vermesini engelle
+            var $form = $('#loginForm');
+            if ($form.length && $form.data('validator')) {
+                var validator = $form.data('validator');
+                validator.settings.onfocusout = function (element) {
+                    if ($(element).hasClass('input-validation-error') || ($(element).val() && $(element).val().trim().length > 0)) {
+                        this.element(element);
+                    }
+                };
+            }
+
+            // Başarısız form gönderiminden sonra veya sunucu hatası döndüğünde CAPTCHA'yı yenile
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <text>
+                setTimeout(function () {
+                    if (window.turnstile) {
+                        try {
+                            turnstile.reset('#cf-turnstile-login');
+                        } catch (e) {
+                            try { turnstile.reset(); } catch (err) {}
+                        }
+                    }
+                }, 300);
+                </text>
+            }
+
+            // İstemci tarafı doğrulama hatasında da CAPTCHA'yı hazırla
+            $('#loginForm').on('submit', function () {
+                if (!$(this).valid()) {
+                    if (window.turnstile) {
+                        try {
+                            turnstile.reset('#cf-turnstile-login');
+                        } catch (e) {
+                            try { turnstile.reset(); } catch (err) {}
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

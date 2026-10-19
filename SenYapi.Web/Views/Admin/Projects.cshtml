@@ -1,0 +1,725 @@
+@model IEnumerable<Project>
+@{
+    ViewData["Title"] = "Projeler Yönetimi";
+    var search = ViewBag.Search as string;
+    var currentCat = ViewBag.Category as string;
+}
+
+@if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-check-circle mr-2"></i> @TempData["AdminSuccess"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["AdminError"]
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    }
+
+    <!-- Search & Filter Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" asp-controller="AdminProjects" asp-action="Projects" class="row align-items-center">
+                <div class="col-md-5 mb-2 mb-md-0">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Proje adı veya açıklamada ara..." value="@search" />
+                        <div class="input-group-append">
+                            <button class="btn btn-warning" type="submit"><i class="fa fa-search"></i> Ara</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2 mb-md-0">
+                    <select name="category" class="form-control" onchange="this.form.submit()">
+                        <option value="all" selected="@(currentCat == "all" || string.IsNullOrEmpty(currentCat))">Tüm Kategoriler</option>
+                        <option value="complete" selected="@(currentCat == "complete")">Tamamlanan Projeler</option>
+                        <option value="running" selected="@(currentCat == "running")">Devam Eden Projeler</option>
+                        <option value="upcoming" selected="@(currentCat == "upcoming")">Gelecek Projeler</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-md-right">
+                    @if (!string.IsNullOrEmpty(search) || (!string.IsNullOrEmpty(currentCat) && currentCat != "all"))
+                    {
+                        <a asp-controller="AdminProjects" asp-action="Projects" class="btn btn-outline-secondary btn-sm mr-2">Filtreyi Sıfırla</a>
+                    }
+                    <button type="button" class="btn btn-warning btn-sm font-weight-bold" data-toggle="modal" data-target="#addProjectModal">
+                        <i class="fa fa-plus-circle mr-1"></i> Yeni Proje
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Projects Table Card -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa fa-building text-warning mr-2"></i> Kayıtlı Projeler (@Model.Count())
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th style="width: 80px;">Görsel</th>
+                            <th>Proje Adı & Konum</th>
+                            <th>Kategori</th>
+                            <th>Kalıcı Bağlantı (Slug)</th>
+                            <th>Fiyat / Katalog</th>
+                            <th>Durum</th>
+                            <th class="text-right" style="min-width: 270px;">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@Url.Content(item.ImageUrl)" alt="@item.Title" class="admin-img-16-9 shadow-sm" style="width: 72px;" />
+                                    </td>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">@item.Title</div>
+                                        <small class="text-muted"><i class="fa fa-map-marker-alt text-warning mr-1"></i> @(string.IsNullOrEmpty(item.Location) ? "İstanbul" : item.Location)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(item.Category == "complete" ? "badge-success" : item.Category == "running" ? "badge-primary" : "badge-info") px-2 py-1">
+                                            @item.CategoryName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <code class="small text-muted">/projeler/@item.Slug</code>
+                                    </td>
+                                    <td>
+                                        @if (item.ShowPrice && item.Price.HasValue)
+                                        {
+                                            <span class="badge badge-light border text-dark font-weight-bold">
+                                                @item.PricePrefix @item.Price.Value.ToString("N0") @item.Currency
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="small text-muted">Teklif Usulü</span>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(item.PdfBrochureUrl))
+                                        {
+                                            <a href="@Url.Content(item.PdfBrochureUrl)" target="_blank" class="badge badge-danger ml-1" title="Katalog PDF">
+                                                <i class="fa fa-file-pdf"></i> PDF
+                                            </a>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge badge-success">Yayında</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">Taslak</span>
+                                        }
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="d-inline-flex align-items-center">
+                                            <button type="button" class="btn btn-outline-info btn-sm mr-1" data-toggle="modal" data-target="#projectDetailModal-@item.Id" title="Ayrıntıları Göster">
+                                                <i class="fa fa-eye mr-1"></i> Detay
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning btn-sm mr-1" data-toggle="modal" data-target="#projectEditModal-@item.Id" title="Düzenle">
+                                                <i class="fa fa-edit mr-1"></i> Düzenle
+                                            </button>
+                                            <a asp-controller="AdminManagement" asp-action="Versions" asp-route-entityType="Project" asp-route-entityId="@item.Id" class="btn btn-outline-dark btn-sm mr-1" title="Sürüm Geçmişi">
+                                                <i class="fa fa-history"></i>
+                                            </a>
+                                            <a asp-controller="Project" asp-action="Detail" asp-route-slug="@item.Slug" target="_blank" class="btn btn-outline-secondary btn-sm mr-1" title="Sitede Gör">
+                                                <i class="fa fa-external-link-alt"></i>
+                                            </a>
+                                            <form asp-controller="AdminProjects" asp-action="DeleteProject" asp-route-id="@item.Id" method="post" class="d-inline m-0" onsubmit="return confirm('Bu projeyi çöp kutusuna taşımak istediğinize emin misiniz?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Çöpe Taşı">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <!-- Project Detail Modal -->
+                                        <div class="modal fade text-left" id="projectDetailModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title text-white">
+                                                            <i class="fa fa-building text-warning mr-2"></i> @item.Title
+                                                        </h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="text-center mb-3">
+                                                            <img src="@Url.Content(item.ImageUrl)" alt="@item.Title" class="img-fluid rounded shadow-sm" style="max-height: 250px; width: 100%; object-fit: cover;" />
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-md-4"><strong>Kategori:</strong> <span class="badge badge-info">@item.CategoryName</span></div>
+                                                            <div class="col-md-4"><strong>Konum:</strong> @(string.IsNullOrEmpty(item.Location) ? "İstanbul" : item.Location)</div>
+                                                            <div class="col-md-4"><strong>Teslim:</strong> @(string.IsNullOrEmpty(item.EstimatedDeliveryDate) ? "Belirtilmedi" : item.EstimatedDeliveryDate)</div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-md-4"><strong>Daire Tipleri:</strong> @(string.IsNullOrEmpty(item.ApartmentTypes) ? "-" : item.ApartmentTypes)</div>
+                                                            <div class="col-md-4"><strong>Alan Aralığı:</strong> @(string.IsNullOrEmpty(item.AreaSquareMeters) ? "-" : item.AreaSquareMeters)</div>
+                                                            <div class="col-md-4">
+                                                                <strong>Fiyat:</strong> 
+                                                                @(item.ShowPrice && item.Price.HasValue ? $"{item.PricePrefix} {item.Price.Value:N0} {item.Currency}" : "Gizli / Teklif")
+                                                            </div>
+                                                        </div>
+                                                        <p class="mb-1"><strong>Açıklama:</strong></p>
+                                                        <div class="p-3 bg-light rounded text-dark mb-3">@item.Description</div>
+
+                                                        @if (!string.IsNullOrEmpty(item.PdfBrochureUrl))
+                                                        {
+                                                            <div class="mb-3">
+                                                                <strong>Proje Broşürü:</strong>
+                                                                <a href="@Url.Content(item.PdfBrochureUrl)" target="_blank" class="btn btn-sm btn-outline-danger ml-2">
+                                                                    <i class="fa fa-file-pdf mr-1"></i> Broşürü İndir / İncele
+                                                                </a>
+                                                            </div>
+                                                        }
+
+                                                        @if (item.Images != null && item.Images.Any())
+                                                        {
+                                                            <p class="mb-1 font-weight-bold">Galeri Fotoğrafları (@item.Images.Count):</p>
+                                                            <div class="d-flex flex-wrap" style="gap: 8px;">
+                                                                @foreach (var gImg in item.Images)
+                                                                {
+                                                                    <div style="position: relative; width: 90px; height: 70px;">
+                                                                        <img src="@Url.Content(gImg.ImageUrl)" alt="Galeri" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" />
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Kapat</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Project Edit Modal -->
+                                        <div class="modal fade text-left" id="projectEditModal-@item.Id" tabindex="-1" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title text-white">
+                                                            <i class="fa fa-edit text-warning mr-2"></i> Projeyi Düzenle
+                                                        </h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                                    </div>
+                                                    <form asp-controller="AdminProjects" asp-action="UpdateProject" method="post" enctype="multipart/form-data" class="admin-project-form">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="Id" value="@item.Id" />
+                                                        <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark small">Proje Adı *</label>
+                                                                <input type="text" name="Title" class="form-control" value="@item.Title" required />
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Proje Durumu / Kategori *</label>
+                                                                    <select name="Category" class="form-control" required>
+                                                                        <option value="complete" selected="@(item.Category == "complete")">Tamamlanan Proje</option>
+                                                                        <option value="running" selected="@(item.Category == "running")">Devam Eden Proje</option>
+                                                                        <option value="upcoming" selected="@(item.Category == "upcoming")">Gelecek Proje</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Özel Kalıcı Bağlantı (Slug)</label>
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-prepend">
+                                                                            <span class="input-group-text small bg-light font-weight-bold">/projeler/</span>
+                                                                        </div>
+                                                                        <input type="text" name="Slug" id="editSlugInput-@item.Id" class="form-control font-weight-bold slug-edit-input" data-project-id="@item.Id" value="@item.Slug" placeholder="vadi-konaklari" />
+                                                                    </div>
+                                                                    <div class="d-flex flex-column mt-1">
+                                                                        <small class="text-primary font-weight-bold mb-1">
+                                                                            <i class="fa fa-link mr-1"></i> Önizleme: <code class="text-primary font-weight-bold" id="editSlugPreview-@item.Id">https://senyapi.com/projeler/@item.Slug</code>
+                                                                        </small>
+                                                                        <small class="text-warning font-weight-bold">
+                                                                            <i class="fa fa-info-circle mr-1"></i> Kalıcı bağlantı değiştirilirse, eski adres güncel adrese 301 kalıcı yönlendirme ile aktarılır.
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Location & Address -->
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Konum / Şehir</label>
+                                                                    <input type="text" name="Location" class="form-control" value="@item.Location" placeholder="Örn: Kadıköy / İstanbul" />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Tahmini Teslim Tarihi</label>
+                                                                    <input type="text" name="EstimatedDeliveryDate" class="form-control" value="@item.EstimatedDeliveryDate" placeholder="Örn: Aralık 2026" />
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Specs -->
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Daire Tipleri</label>
+                                                                    <input type="text" name="ApartmentTypes" class="form-control" value="@item.ApartmentTypes" placeholder="Örn: 2+1, 3+1, 4+1 Dubleks" />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Metrekare Aralığı</label>
+                                                                    <input type="text" name="AreaSquareMeters" class="form-control" value="@item.AreaSquareMeters" placeholder="Örn: 85 m² - 220 m²" />
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Pricing -->
+                                                            <div class="p-3 bg-light rounded border mb-3">
+                                                                <div class="row">
+                                                                    <div class="col-md-3 form-group mb-2">
+                                                                        <div class="custom-control custom-checkbox mt-4">
+                                                                            <input type="checkbox" class="custom-control-input" id="editShowPrice-@item.Id" name="ShowPrice" value="true" checked="@item.ShowPrice" />
+                                                                            <label class="custom-control-label font-weight-bold text-dark" for="editShowPrice-@item.Id">Fiyat Göster</label>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-3 form-group mb-2">
+                                                                        <label class="font-weight-bold small">Ön Ek</label>
+                                                                        <input type="text" name="PricePrefix" class="form-control" value="@item.PricePrefix" placeholder="Başlangıç" />
+                                                                    </div>
+                                                                    <div class="col-md-4 form-group mb-2">
+                                                                        <label class="font-weight-bold small">Fiyat Tutarı</label>
+                                                                        <input type="number" step="1000" name="Price" class="form-control" value="@item.Price" placeholder="5500000" />
+                                                                    </div>
+                                                                    <div class="col-md-2 form-group mb-2">
+                                                                        <label class="font-weight-bold small">Para Birimi</label>
+                                                                        <input type="text" name="Currency" class="form-control" value="@item.Currency" placeholder="TL" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Map & Address -->
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Açık Adres</label>
+                                                                    <input type="text" name="Address" class="form-control" value="@item.Address" placeholder="Cadde, Mahalle, No..." />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Google Harita Embed URL</label>
+                                                                    <input type="text" name="MapEmbedUrl" class="form-control" value="@item.MapEmbedUrl" placeholder="https://www.google.com/maps/embed?..." />
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- PDF Brochure Upload -->
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark small">Proje Kataloğu (PDF)</label>
+                                                                <input type="file" name="pdfFile" class="form-control-file border p-1 rounded" accept="application/pdf" />
+                                                                @if (!string.IsNullOrEmpty(item.PdfBrochureUrl))
+                                                                {
+                                                                    <small class="text-success d-block mt-1"><i class="fa fa-check mr-1"></i> Mevcut Katalog Yüklü: <code>@item.PdfBrochureUrl</code></small>
+                                                                }
+                                                                <small class="text-muted">Maksimum 15MB (.pdf formatında)</small>
+                                                            </div>
+
+                                                            <!-- Cover Image -->
+                                                            <div class="form-group mb-3 p-3 bg-light rounded border">
+                                                                <label class="font-weight-bold text-dark small d-block mb-2">Kapak Fotoğrafı</label>
+                                                                <div class="d-flex align-items-center mb-2">
+                                                                    <div class="mr-3 text-center">
+                                                                        <img src="@Url.Content(item.ImageUrl)" alt="@item.Title" class="img-thumbnail rounded shadow-sm admin-img-16-9" style="width: 120px;" />
+                                                                        <small class="d-block text-muted mt-1" style="font-size: 11px;">Mevcut Kapak (16:9)</small>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="small text-dark font-weight-bold">
+                                                                            <i class="fa fa-file-image mr-1 text-warning"></i> Dosya: <code class="text-dark">@(System.IO.Path.GetFileName(item.ImageUrl))</code>
+                                                                        </div>
+                                                                        <div class="small text-muted mb-2">
+                                                                            <i class="fa fa-tag mr-1"></i> Alt Metni (SEO): <em>@item.Title</em>
+                                                                        </div>
+                                                                        <label class="btn btn-sm btn-outline-dark mb-0 font-weight-bold cursor-pointer">
+                                                                            <i class="fa fa-camera mr-1 text-warning"></i> Yeni Kapak Görseli Seç...
+                                                                            <input type="file" name="imageFile" class="d-none cover-image-picker" data-preview-id="newCoverPreview-@item.Id" data-container-id="newCoverContainer-@item.Id" data-name-id="newCoverName-@item.Id" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                                                        </label>
+                                                                        <input type="hidden" name="ImageUrl" value="@item.ImageUrl" />
+                                                                    </div>
+                                                                </div>
+                                                                <!-- Yeni Seçilen Görsel Canlı Önizlemesi -->
+                                                                <div id="newCoverContainer-@item.Id" class="mt-2 p-2 rounded border border-warning d-none align-items-center" style="background-color: #fff9e6;">
+                                                                    <div class="mr-3 text-center">
+                                                                        <img id="newCoverPreview-@item.Id" src="#" alt="Yeni Önizleme" class="img-thumbnail rounded border-warning shadow-sm admin-img-16-9" style="width: 120px;" />
+                                                                        <span class="badge badge-warning text-dark font-weight-bold d-block mt-1" style="font-size: 10px;">Yeni Seçilen (16:9)</span>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <span class="badge badge-warning text-dark font-weight-bold mb-1 px-2 py-1">
+                                                                            <i class="fa fa-clock mr-1"></i> Yeni Dosya Seçildi (Henüz Kaydedilmedi!)
+                                                                        </span>
+                                                                        <div class="small font-weight-bold text-dark" id="newCoverName-@item.Id"></div>
+                                                                        <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                                                                            <i class="fa fa-info-circle text-warning mr-1"></i> Değişikliğin kaydedilmesi için aşağıdaki <strong>"Projeyi Güncelle"</strong> butonuna tıklayınız. Yeni dosya seçmezseniz mevcut görseliniz aynen korunur.
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                                <small class="text-muted d-block mt-2" style="font-size: 11px;">Maksimum 5MB • Desteklenen: JPG, PNG, WEBP • Yüklemede orijinal dosya adından SEO uyumlu benzersiz isim oluşturulur (Sayfa bağlantısı / slug görselden bağımsızdır).</small>
+                                                            </div>
+
+                                                            <div class="form-group mb-3">
+                                                                <label class="font-weight-bold text-dark small">Açıklama</label>
+                                                                <textarea name="Description" class="form-control" rows="3">@item.Description</textarea>
+                                                            </div>
+
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">SEO Başlığı (Meta Title)</label>
+                                                                    <input type="text" name="MetaTitle" class="form-control" value="@item.MetaTitle" placeholder="Proje Adı | Şen Yapı" />
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">SEO Açıklaması (Meta Description)</label>
+                                                                    <input type="text" name="MetaDescription" class="form-control" value="@item.MetaDescription" placeholder="Arama motoru açıklaması..." />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row">
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <div class="custom-control custom-checkbox mt-2">
+                                                                        <input type="checkbox" class="custom-control-input" id="isActive-@item.Id" name="IsActive" value="true" checked="@item.IsActive" />
+                                                                        <label class="custom-control-label font-weight-bold text-dark" for="isActive-@item.Id">Yayında / Aktif</label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6 form-group mb-3">
+                                                                    <label class="font-weight-bold text-dark small">Sıralama Değeri</label>
+                                                                    <input type="number" name="DisplayOrder" class="form-control" value="@item.DisplayOrder" />
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Multi Gallery Upload -->
+                                                            <div class="form-group mb-3 border-top pt-3">
+                                                                <label class="font-weight-bold text-dark small">Galeriye Yeni Fotoğraflar Ekle</label>
+                                                                <input type="file" name="galleryFiles" class="form-control-file border p-1 rounded" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                                            </div>
+
+                                                            @if (item.Images != null && item.Images.Any())
+                                                            {
+                                                                <div class="form-group mb-2">
+                                                                    <label class="font-weight-bold text-dark small d-block">Mevcut Galeri Fotoğrafları:</label>
+                                                                    <div class="d-flex flex-wrap" style="gap: 10px;">
+                                                                        @foreach (var gImg in item.Images)
+                                                                        {
+                                                                            <div class="border rounded p-1 text-center" style="width: 100px;">
+                                                                                <img src="@Url.Content(gImg.ImageUrl)" alt="Galeri" class="admin-img-16-9" style="width: 100%;" />
+                                                                                <button type="submit" formaction="@Url.Action("DeleteProjectImage", "Admin", new { imageId = gImg.Id, projectId = item.Id })" class="btn btn-outline-danger btn-sm btn-block mt-1 p-0" style="font-size: 11px;" title="Fotoğrafı Kaldır" onclick="return confirm('Bu galeri görselini silmek istediğinize emin misiniz?');">
+                                                                                    Sil
+                                                                                </button>
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                                                            <button type="submit" class="btn btn-warning font-weight-bold btn-submit-prevent-double">
+                                                                <i class="fa fa-save mr-1"></i> Değişiklikleri Kaydet
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Arama kriterlerine uygun proje bulunamadı.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<!-- ======================= ADD PROJECT MODAL ======================= -->
+<div class="modal fade" id="addProjectModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title text-white">
+                    <i class="fa fa-plus-circle text-warning mr-2"></i> Yeni Proje Ekle
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form asp-controller="AdminProjects" asp-action="AddProject" method="post" enctype="multipart/form-data" class="admin-project-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto;">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark small">Proje Adı *</label>
+                        <input type="text" name="Title" id="addProjectTitle" class="form-control" placeholder="Örn: Vadi Konakları" required />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Proje Durumu / Kategori *</label>
+                            <select name="Category" class="form-control" required>
+                                <option value="complete">Tamamlanan Proje</option>
+                                <option value="running">Devam Eden Proje</option>
+                                <option value="upcoming">Gelecek Proje</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Özel Kalıcı Bağlantı (Slug)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text small bg-light font-weight-bold">/projeler/</span>
+                                </div>
+                                <input type="text" name="Slug" id="addProjectSlug" class="form-control font-weight-bold" placeholder="vadi-konaklari (boşsa başlıktan otomatik)" />
+                            </div>
+                            <small class="text-primary font-weight-bold d-block mt-1">
+                                <i class="fa fa-link mr-1"></i> Önizleme: <code class="text-primary font-weight-bold" id="addSlugPreview">https://senyapi.com/projeler/...</code>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Location & Delivery -->
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Konum / Şehir</label>
+                            <input type="text" name="Location" class="form-control" placeholder="Örn: Kadıköy / İstanbul" />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Tahmini Teslim Tarihi</label>
+                            <input type="text" name="EstimatedDeliveryDate" class="form-control" placeholder="Örn: Aralık 2026" />
+                        </div>
+                    </div>
+
+                    <!-- Specs -->
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Daire Tipleri</label>
+                            <input type="text" name="ApartmentTypes" class="form-control" placeholder="Örn: 2+1, 3+1, 4+1 Dubleks" />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Metrekare Aralığı</label>
+                            <input type="text" name="AreaSquareMeters" class="form-control" placeholder="Örn: 85 m² - 220 m²" />
+                        </div>
+                    </div>
+
+                    <!-- Pricing Box -->
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="row">
+                            <div class="col-md-3 form-group mb-2">
+                                <div class="custom-control custom-checkbox mt-4">
+                                    <input type="checkbox" class="custom-control-input" id="addShowPrice" name="ShowPrice" value="true" />
+                                    <label class="custom-control-label font-weight-bold text-dark" for="addShowPrice">Fiyat Göster</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 form-group mb-2">
+                                <label class="font-weight-bold small">Ön Ek</label>
+                                <input type="text" name="PricePrefix" class="form-control" value="Başlangıç" />
+                            </div>
+                            <div class="col-md-4 form-group mb-2">
+                                <label class="font-weight-bold small">Fiyat Tutarı</label>
+                                <input type="number" step="1000" name="Price" class="form-control" placeholder="5500000" />
+                            </div>
+                            <div class="col-md-2 form-group mb-2">
+                                <label class="font-weight-bold small">Birim</label>
+                                <input type="text" name="Currency" class="form-control" value="TL" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address & Map -->
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Açık Adres</label>
+                            <input type="text" name="Address" class="form-control" placeholder="Mahalle, Cadde..." />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Google Harita Embed URL</label>
+                            <input type="text" name="MapEmbedUrl" class="form-control" placeholder="https://www.google.com/maps/embed?..." />
+                        </div>
+                    </div>
+
+                    <!-- PDF Brochure & Images -->
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark small">Proje Kataloğu (PDF)</label>
+                        <input type="file" name="pdfFile" class="form-control-file border p-1 rounded" accept="application/pdf" />
+                        <small class="text-muted">Maksimum 15MB PDF formatında katalog dosyası</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Kapak Fotoğrafı Yükle</label>
+                            <input type="file" name="imageFile" id="addImageFile" class="form-control-file border p-1 rounded" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                            <small class="text-muted d-block mt-1">Maksimum 5MB (JPG, PNG, WEBP) • Yüklenen dosya adından SEO uyumlu benzersiz isim oluşturulur.</small>
+                            <!-- Canlı Önizleme -->
+                            <div id="addCoverPreviewContainer" class="mt-2 p-2 rounded border border-warning d-none align-items-center" style="background-color: #fff9e6;">
+                                <img id="addCoverPreview" src="#" alt="Önizleme" class="img-thumbnail rounded border-warning mr-3 admin-img-16-9" style="width: 120px;" />
+                                <div>
+                                    <span class="badge badge-warning text-dark font-weight-bold mb-1 px-2 py-1">
+                                        <i class="fa fa-clock mr-1"></i> Yeni Dosya Seçildi (Henüz Kaydedilmedi)
+                                    </span>
+                                    <small class="d-block text-dark font-weight-bold" id="addCoverFileName"></small>
+                                    <small class="text-muted d-block" style="font-size: 11px;">"Kaydet ve Yayınla" butonuna bastığınızda sunucuya yüklenecektir.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Galeri Fotoğrafları (Çoklu)</label>
+                            <input type="file" name="galleryFiles" class="form-control-file border p-1 rounded" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                            <small class="text-muted d-block mt-1">İsteğe bağlı birden fazla fotoğraf seçebilirsiniz.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-dark small">Açıklama</label>
+                        <textarea name="Description" class="form-control" rows="3" placeholder="Proje hakkında detaylı özet..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">SEO Başlığı (Meta Title)</label>
+                            <input type="text" name="MetaTitle" class="form-control" placeholder="Proje Başlığı" />
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">SEO Açıklaması (Meta Description)</label>
+                            <input type="text" name="MetaDescription" class="form-control" placeholder="Arama motoru kısa açıklaması" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <div class="custom-control custom-checkbox mt-2">
+                                <input type="checkbox" class="custom-control-input" id="addIsActive" name="IsActive" value="true" checked />
+                                <label class="custom-control-label font-weight-bold text-dark" for="addIsActive">Hemen Yayına Al</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">Sıralama Değeri</label>
+                            <input type="number" name="DisplayOrder" class="form-control" value="0" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold btn-submit-prevent-double">
+                        <i class="fa fa-check mr-1"></i> Kaydet ve Yayınla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Türkçe karakterleri slug formatına dönüştürme fonksiyonu (Canlı Önizleme)
+            function toSlug(text) {
+                if (!text) return '';
+                var trMap = {
+                    'ç': 'c', 'Ç': 'c',
+                    'ğ': 'g', 'Ğ': 'g',
+                    'ı': 'i', 'I': 'i', 'İ': 'i',
+                    'ö': 'o', 'Ö': 'o',
+                    'ş': 's', 'Ş': 's',
+                    'ü': 'u', 'Ü': 'u'
+                };
+                var str = text.replace(/[çÇğĞıIİöÖşŞüÜ]/g, function (matched) {
+                    return trMap[matched] || matched;
+                }).toLowerCase();
+
+                return str.replace(/[^a-z0-9\s-]/g, '')
+                          .replace(/[\s-]+/g, '-')
+                          .replace(/^-+|-+$/g, '');
+            }
+
+            // Yeni Proje Modalında Canlı Slug ve Önizleme
+            $('#addProjectTitle').on('input', function () {
+                var manualSlug = $('#addProjectSlug').val().trim();
+                if (!manualSlug) {
+                    var generated = toSlug($(this).val());
+                    $('#addSlugPreview').text('https://senyapi.com/projeler/' + (generated || '...'));
+                }
+            });
+
+            $('#addProjectSlug').on('input', function () {
+                var val = $(this).val().trim();
+                var clean = toSlug(val);
+                if (clean) {
+                    $('#addSlugPreview').text('https://senyapi.com/projeler/' + clean);
+                } else {
+                    var titleVal = $('#addProjectTitle').val();
+                    var gen = toSlug(titleVal);
+                    $('#addSlugPreview').text('https://senyapi.com/projeler/' + (gen || '...'));
+                }
+            });
+
+            // Düzenleme Modalında Canlı Slug Önizleme
+            $('.slug-edit-input').on('input', function () {
+                var id = $(this).data('project-id');
+                var val = $(this).val().trim();
+                var clean = toSlug(val);
+                $('#editSlugPreview-' + id).text('https://senyapi.com/projeler/' + (clean || '...'));
+            });
+
+            // Kapak Fotoğrafı Canlı Önizleme (FileReader)
+            $('.cover-image-picker').on('change', function () {
+                var input = this;
+                var previewId = $(input).data('preview-id');
+                var containerId = $(input).data('container-id');
+                var nameId = $(input).data('name-id');
+
+                if (input.files && input.files[0]) {
+                    var file = input.files[0];
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Seçilen görsel 5 MB\'den büyüktür. Lütfen daha küçük bir dosya seçiniz.');
+                        input.value = '';
+                        return;
+                    }
+
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#' + previewId).attr('src', e.target.result);
+                        $('#' + nameId).text(file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+                        $('#' + containerId).removeClass('d-none').addClass('d-flex');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Yeni Proje Modalında Kapak Fotoğrafı Canlı Önizleme
+            $('#addImageFile').on('change', function () {
+                var input = this;
+                if (input.files && input.files[0]) {
+                    var file = input.files[0];
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Seçilen görsel 5 MB\'den büyüktür. Lütfen daha küçük bir dosya seçiniz.');
+                        input.value = '';
+                        return;
+                    }
+
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#addCoverPreview').attr('src', e.target.result);
+                        $('#addCoverFileName').text(file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+                        $('#addCoverPreviewContainer').removeClass('d-none').addClass('d-flex');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Form Gönderimlerinde Çift Tıklamayı (Double-Submit) Önleme
+            $('form.admin-project-form').on('submit', function () {
+                var $btn = $(this).find('button[type="submit"].btn-submit-prevent-double');
+                if ($btn.length && !$btn.prop('disabled')) {
+                    $btn.prop('disabled', true);
+                    $btn.html('<i class="fa fa-spinner fa-spin mr-1"></i> Kaydediliyor...');
+                }
+            });
+        });
+    </script>
+}

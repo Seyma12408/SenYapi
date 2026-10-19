@@ -1,0 +1,246 @@
+@model SenYapi.Entity.ContactMessage
+@inject ICaptchaService CaptchaService
+@{
+    ViewData["Title"] = $"Mesaj Takibi: {Model.Subject}";
+    var token = ViewBag.Token as string ?? Model.AccessToken;
+    var replies = Model.Replies?.OrderBy(r => r.RepliedAt).ToList() ?? new List<ContactMessageReply>();
+}
+
+<partial name="_PageHeader" model='(Model.Subject, "Mesaj Takibi & Konuşma")' />
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-md-11">
+
+            <!-- Security Notice Banner -->
+            <div class="alert alert-light border shadow-sm mb-4 d-flex align-items-center justify-content-between p-3" style="background: #fdfdfd; border-left: 4px solid #fdbe33 !important;">
+                <div>
+                    <span class="font-weight-bold text-dark d-block">
+                        <i class="fa fa-shield-alt text-warning mr-1"></i> Özel & Güvenli Konuşma Alanı
+                    </span>
+                    <small class="text-muted">
+                        Bu sayfa, ilettiğiniz mesaja özel üretilmiş benzersiz erişim anahtarı ile korunmaktadır. Yöneticimizle karşılıklı iletişiminizi buradan sürdürebilirsiniz.
+                    </small>
+                </div>
+                <a href="/iletisim" class="btn btn-outline-dark btn-sm font-weight-bold ml-3 text-nowrap">
+                    <i class="fa fa-arrow-left mr-1"></i> İletişim
+                </a>
+            </div>
+
+            @if (TempData["ThreadSuccess"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fa fa-check-circle mr-2"></i> @TempData["ThreadSuccess"]
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            }
+            @if (TempData["ThreadError"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["ThreadError"]
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            }
+
+            <!-- CONVERSATION TIMELINE -->
+            <div class="card border-0 shadow-sm rounded-lg overflow-hidden mb-4">
+                <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0 font-weight-bold text-warning">
+                            <i class="fa fa-comments mr-2"></i> Konu: @Model.Subject
+                        </h5>
+                        <small class="text-light">Başlangıç Tarihi: @Model.CreatedAt.ToString("dd MMMM yyyy HH:mm")</small>
+                    </div>
+                    <div>
+                        @if (Model.IsReplied)
+                        {
+                            <span class="badge badge-success px-3 py-2 font-weight-bold">
+                                <i class="fa fa-check-circle mr-1"></i> Yetkili Yanıtladı
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-warning text-dark px-3 py-2 font-weight-bold">
+                                <i class="fa fa-clock mr-1"></i> İnceleniyor
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-4" style="background: #f8fafc;">
+                    <!-- 1. Customer's Initial Message -->
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="rounded-circle bg-dark text-warning d-flex align-items-center justify-content-center font-weight-bold mr-3 flex-shrink-0 shadow-sm"
+                             style="width: 44px; height: 44px; font-size: 16px; border: 2px solid #fdbe33;">
+                            @(string.IsNullOrEmpty(Model.Name) ? "S" : Model.Name.Substring(0, 1).ToUpper())
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="bg-white border rounded p-3 shadow-sm" style="border-left: 4px solid #030f27 !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="font-weight-bold text-dark">
+                                        @Model.Name <small class="text-muted font-weight-normal">(İlk Mesajınız)</small>
+                                    </span>
+                                    <small class="text-muted"><i class="far fa-clock mr-1"></i>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <div class="text-dark" style="white-space: pre-wrap; line-height: 1.6; font-size: 14.5px;">
+                                    @Model.Message
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Replies in Chronological Order -->
+                    @if (replies.Any())
+                    {
+                        foreach (var reply in replies)
+                        {
+                            var isStaff = reply.IsStaffReply;
+                            <div class="d-flex align-items-start mb-3 @(isStaff ? "" : "flex-row-reverse")">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center font-weight-bold flex-shrink-0 shadow-sm @(isStaff ? "mr-3 bg-dark text-warning" : "ml-3 bg-warning text-dark")"
+                                     style="width: 42px; height: 42px; font-size: 15px; border: 2px solid #030f27;">
+                                    @(isStaff ? "Ş" : (string.IsNullOrEmpty(reply.SenderName) ? "S" : reply.SenderName.Substring(0, 1).ToUpper()))
+                                </div>
+                                <div class="flex-grow-1" style="max-width: 85%;">
+                                    <div class="p-3 rounded border shadow-sm" 
+                                         style="background: @(isStaff ? "#fffdf5" : "#ffffff"); border-left: @(isStaff ? "4px solid #fdbe33 !important" : "1px solid #dee2e6"); border-right: @(isStaff ? "1px solid #dee2e6" : "4px solid #0a193d !important");">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <div>
+                                                @if (isStaff)
+                                                {
+                                                    <span class="badge badge-dark text-warning font-weight-bold mr-2 px-2 py-1" style="font-size: 11px;">
+                                                        <i class="fa fa-shield-alt mr-1"></i> Şen Yapı Yetkilisi
+                                                    </span>
+                                                    <span class="font-weight-bold text-dark">@(string.IsNullOrEmpty(reply.RepliedBy) ? "Müşteri Hizmetleri" : reply.RepliedBy)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-light border text-dark font-weight-bold mr-2 px-2 py-1" style="font-size: 11px;">
+                                                        <i class="fa fa-user mr-1"></i> Siz
+                                                    </span>
+                                                    <span class="font-weight-bold text-dark">@(reply.SenderName ?? Model.Name)</span>
+                                                }
+                                            </div>
+                                            <small class="text-muted" style="font-size: 12px;">
+                                                <i class="far fa-clock mr-1"></i>@reply.RepliedAt.ToString("dd.MM.yyyy HH:mm")
+                                            </small>
+                                        </div>
+                                        <div class="text-dark mt-2" style="white-space: pre-wrap; line-height: 1.6; font-size: 14px;">
+                                            @reply.ReplyText
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted bg-white rounded border">
+                            <i class="fa fa-hourglass-half fa-2x text-warning mb-2 d-block"></i>
+                            <h6 class="font-weight-bold text-dark">Mesajınız İnceleniyor</h6>
+                            <p class="small text-muted mb-0">Yetkili ekibimiz mesajınızı değerlendiriyor. Yanıt verildiğinde e-posta adresinize bilgilendirme iletilecektir.</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- 3. Customer Reply Form -->
+                <div class="card-footer bg-white p-4 border-top" id="yanit-alani">
+                    <h5 class="font-weight-bold text-dark mb-2">
+                        <i class="fa fa-reply text-warning mr-2"></i> Yetkiliye Yanıt Yazın
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        Ek bilgi iletmek veya konuyu netleştirmek için aşağıdaki alandan yeni bir yanıt gönderebilirsiniz.
+                    </p>
+
+                    <form asp-controller="Contact" asp-action="AddCustomerReply" method="post" id="threadReplyForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="messageId" value="@Model.Id" />
+                        <input type="hidden" name="token" value="@token" />
+
+                        @{
+                            var preservedCustomerName = TempData["PreservedCustomerName"] as string ?? Model.Name;
+                            var preservedReplyText = TempData["PreservedReplyText"] as string ?? string.Empty;
+                        }
+
+                        @if (User.Identity?.IsAuthenticated != true)
+                        {
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold small text-dark">Adınız Soyadınız:</label>
+                                <input type="text" class="form-control" name="customerName" value="@preservedCustomerName" required maxlength="100" />
+                            </div>
+                        }
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold small text-dark">Yanıtınız *:</label>
+                            <textarea name="replyText" id="replyText" class="form-control" rows="4" required placeholder="Cevabınızı buraya yazınız..." maxlength="2000">@preservedReplyText</textarea>
+                            <small class="text-muted d-block text-right mt-1" id="charCounter">Maksimum 2000 karakter</small>
+                        </div>
+
+                        <!-- CAPTCHA (Turnstile) -->
+                        <div class="form-group mb-3 text-left">
+                            <div id="cf-turnstile-thread" class="cf-turnstile" data-sitekey="@CaptchaService.GetSiteKey()" data-action="contact_reply" data-theme="light"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fa fa-lock mr-1 text-success"></i> Yanıtınız sistem yöneticimizin paneline anında iletilecektir.
+                            </small>
+                            <button type="submit" class="btn btn-warning font-weight-bold px-4 shadow-sm" id="btnSubmitThreadReply">
+                                <span id="btnSubmitText"><i class="fa fa-paper-plane mr-1"></i> Yanıtı Gönder</span>
+                                <span id="btnSubmitSpinner" class="d-none"><i class="fa fa-spinner fa-spin mr-1"></i> İletiliyor...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var form = document.getElementById("threadReplyForm");
+        var btn = document.getElementById("btnSubmitThreadReply");
+        var textSpan = document.getElementById("btnSubmitText");
+        var spinnerSpan = document.getElementById("btnSubmitSpinner");
+
+        if (form && btn) {
+            form.addEventListener("submit", function (e) {
+                if (btn.disabled) {
+                    e.preventDefault();
+                    return false;
+                }
+                btn.disabled = true;
+                textSpan.classList.add("d-none");
+                spinnerSpan.classList.remove("d-none");
+            });
+        }
+
+        @if (TempData["ThreadError"] != null)
+        {
+            <text>
+            setTimeout(function () {
+                if (window.turnstile) {
+                    try {
+                        turnstile.reset('#cf-turnstile-thread');
+                    } catch (e) {
+                        try { turnstile.reset(); } catch (err) {}
+                    }
+                }
+            }, 300);
+            </text>
+        }
+
+        var textarea = document.getElementById("replyText");
+        var counter = document.getElementById("charCounter");
+        if (textarea && counter) {
+            textarea.addEventListener("input", function () {
+                var remaining = 2000 - this.value.length;
+                counter.textContent = remaining + " karakter kaldı";
+            });
+        }
+    });
+</script>
+}

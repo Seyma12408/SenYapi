@@ -1,0 +1,78 @@
+@model IEnumerable<ServiceItem>
+@{
+    ViewData["Title"] = "Hizmetlerimiz";
+}
+
+<partial name="_PageHeader" model='("Hizmetlerimiz", "Hizmetlerimiz")' />
+
+<!-- Service Start -->
+<div class="service">
+    <div class="container">
+        <div class="section-header text-center">
+            <p>Hizmetlerimiz</p>
+            <h2>Geniş Kapsamlı İnşaat Çözümleri</h2>
+        </div>
+        <div class="row">
+            @foreach (var s in Model)
+            {
+                <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="service-item">
+                        <div class="service-img">
+                            <img src="@Url.Content(s.ImageUrl)" alt="@s.Title">
+                            <div class="service-overlay">
+                                <p>@s.Description</p>
+                            </div>
+                        </div>
+                        <div class="service-text">
+                            <h3>@s.Title</h3>
+                            <a class="btn" href="@Url.Content(s.ImageUrl)" data-lightbox="service">+</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<!-- Service End -->
+
+<!-- Feature Start-->
+<div class="feature wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-lg-4 col-md-12">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="flaticon-worker"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Uzman İş Gücü</h3>
+                        <p>Deneyimli ustalar ve şantiye şefleri ile sıfır hata toleranslı uygulama.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="flaticon-building"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Kalite Güvencesi</h3>
+                        <p>En yüksek inşaat normlarına uygun malzeme ve işçilik kalitesi.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="flaticon-call"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Müşteri Danışmanlığı</h3>
+                        <p>Her aşamada şeffaf raporlama ve birebir müşteri danışmanı desteği.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Feature End-->

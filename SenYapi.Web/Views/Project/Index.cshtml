@@ -1,0 +1,61 @@
+@model IEnumerable<Project>
+@{
+    ViewData["Title"] = "Projelerimiz";
+}
+
+<partial name="_PageHeader" model='("Projelerimiz", "Projelerimiz")' />
+
+<!-- Portfolio Start -->
+<div class="portfolio">
+    <div class="container">
+        <div class="section-header text-center">
+            <p>Projelerimiz</p>
+            <h2>Gerçekleştirdiğimiz ve Devam Eden Eserlerimiz</h2>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <ul id="portfolio-flters">
+                    <li data-filter="*" class="filter-active">Tümü</li>
+                    <li data-filter=".first">Tamamlanan</li>
+                    <li data-filter=".second">Devam Eden</li>
+                    <li data-filter=".third">Gelecek Projeler</li>
+                </ul>
+            </div>
+        </div>
+        <div class="row portfolio-container">
+            @foreach (var p in Model)
+            {
+                var categoryClass = p.Category switch
+                {
+                    "complete" => "first",
+                    "running" => "second",
+                    "upcoming" => "third",
+                    _ => "first"
+                };
+
+                <div class="col-lg-4 col-md-6 col-sm-12 portfolio-item @categoryClass wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="portfolio-warp">
+                        <div class="portfolio-img">
+                            <img src="@Url.Content(p.ImageUrl)" alt="@p.Title">
+                            <div class="portfolio-overlay">
+                                <p>@p.Description</p>
+                            </div>
+                            <a class="portfolio-zoom-btn" href="@Url.Content(p.ImageUrl)" data-lightbox="portfolio" title="Görseli Büyüt" aria-label="Görseli Büyüt">
+                                <i class="fa fa-search-plus"></i>
+                            </a>
+                        </div>
+                        <div class="portfolio-text">
+                            <h3 class="portfolio-title"><a href="/projeler/@(string.IsNullOrEmpty(p.Slug) ? p.Id.ToString() : p.Slug)">@p.Title</a></h3>
+                            <div class="portfolio-action mt-auto">
+                                <a href="/projeler/@(string.IsNullOrEmpty(p.Slug) ? p.Id.ToString() : p.Slug)" class="project-detail-link">
+                                    Projeyi İncele <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<!-- Portfolio End -->

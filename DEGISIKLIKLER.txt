@@ -1,0 +1,17 @@
+ŞenYapı düzenlemeleri
+
+Kullanıcı yönetimi yalnızca SystemAdmin rolüne açıldı. Diğer Admin, Editor ve User hesapları kullanıcı listesine ve rol/engelleme/silme işlemlerine erişemez.
+
+İlk çalıştırmada mevcut admin@senyapi.com hesabı Admin rolündeyse, aktifse ve henüz SystemAdmin yoksa SystemAdmin rolü de atanır. Diğer adminler yükseltilmez. Gerekirse bu hesapla çıkış yapıp yeniden giriş yapın. Bu hesaba erişiminiz yoksa veritabanını silmeyin; başlangıç ataması kurumun gerçek sorumlu hesabına göre düzenlenmelidir.
+
+SystemAdmin hesaplarının silinmesi, engellenmesi, rolünün panelden düşürülmesi ve kendi hesabını kapatması engellendi. Bu sürümde sistem sorumluluğunu devretme ekranı yoktur.
+
+Rol veya engelleme değişikliklerinin açık oturumlara yansıması için güvenlik damgası her istekte doğrulanır. Bu daha sık veritabanı kontrolü anlamına gelir.
+
+Proje, blog ve hizmet kartlarında görseller aynı yükseklikte, oranları bozulmadan kırpılarak gösterilir. Ekip ve detay görselleri kendi bölümünde tutarlı ölçülere sahiptir. Orijinal görsel dosyaları değiştirilmez.
+
+Rol değiştirmede geçersiz roller reddedilir ve Identity işlemlerinin başarısız sonucu başarı olarak gösterilmez.
+
+Kaynak tabanlı regresyon kontrolleri başarılı. Bu ortamda .NET SDK ve SQL Server bulunmadığından derleme, gerçek oturum/HTTP ve tarayıcı testleri çalıştırılamadı. Visual Studio'da çözümü derleyin; sistem yöneticisi ve normal admin ile kullanıcı yönetimi erişimini, farklı oranlı görselleri kontrol edin.
+
+Paket dışında bırakılan bin, obj ve .vs klasörleri Visual Studio tarafından yeniden oluşturulur.

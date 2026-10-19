@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Erişim Reddedildi";
+}
+
+<partial name="_PageHeader" model='("Erişim Reddedildi", "Yetkisiz Erişim")' />
+
+<div class="container py-5 text-center">
+    <div class="py-5">
+        <i class="fa fa-exclamation-triangle fa-4x text-warning mb-3"></i>
+        <h2>Bu Sayfaya Erişim Yetkiniz Yok</h2>
+        <p class="lead text-muted">Bu alanı görüntülemek için Yönetici (Admin) yetkisine sahip bir hesapla giriş yapmanız gerekmektedir.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-warning mt-3">Anasayfaya Dön</a>
+        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-dark mt-3">Farklı Hesapla Giriş Yap</a>
+    </div>
+</div>

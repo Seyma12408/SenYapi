@@ -1,0 +1,133 @@
+@model AboutViewModel
+@{
+    ViewData["Title"] = "Hakkımızda";
+}
+
+<partial name="_PageHeader" model='("Hakkımızda", "Hakkımızda")' />
+
+<!-- About Start -->
+<div class="about wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-5 col-md-6">
+                <div class="about-img">
+                    <img src="~/theme/builderz/img/about.jpg" alt="About Image">
+                </div>
+            </div>
+            <div class="col-lg-7 col-md-6">
+                <div class="section-header text-left">
+                    <p>Şen Yapı Kurumsal</p>
+                    <h2>25 Yıllık Güven ve Mimari Tecrübe</h2>
+                </div>
+                <div class="about-text">
+                    <p>
+                        Şen Yapı olarak, kurulduğumuz ilk günden bu yana çağdaş mimariyi ileri mühendislik ilkeleriyle harmanlayarak güvenli, estetik ve sürdürülebilir yaşam alanları inşa ediyoruz.
+                    </p>
+                    <p>
+                        Konuttan ticari merkezlere, altyapı projelerinden restorasyon çalışmalarına kadar geniş bir yelpazede yüksek standartlı projelere imza atıyoruz. Yenilikçi vizyonumuz ve uzman mühendis kadromuzla sektörde örnek teşkil eden projelere liderlik etmekten gurur duyuyoruz.
+                    </p>
+                    <a class="btn" asp-controller="Contact" asp-action="Index">Bizimle İletişime Geçin</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- About End -->
+
+<!-- Fact Start -->
+<div class="fact">
+    <div class="container-fluid">
+        <div class="row counters">
+            <div class="col-md-6 fact-left wow slideInLeft">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="fact-icon">
+                            <i class="flaticon-worker"></i>
+                        </div>
+                        <div class="fact-text">
+                            <h2 data-toggle="counter-up">125</h2>
+                            <p>Uzman Çalışan</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fact-icon">
+                            <i class="flaticon-building"></i>
+                        </div>
+                        <div class="fact-text">
+                            <h2 data-toggle="counter-up">530</h2>
+                            <p>Mutlu Müşteri</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 fact-right wow slideInRight">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="fact-icon">
+                            <i class="flaticon-address"></i>
+                        </div>
+                        <div class="fact-text">
+                            <h2 data-toggle="counter-up">840</h2>
+                            <p>Tamamlanan Proje</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fact-icon">
+                            <i class="flaticon-crane"></i>
+                        </div>
+                        <div class="fact-text">
+                            <h2 data-toggle="counter-up">45</h2>
+                            <p>Devam Eden Proje</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Fact End -->
+
+<!-- Team Start -->
+<div class="team">
+    <div class="container">
+        <div class="section-header text-center">
+            <p>Ekibimiz</p>
+            <h2>Mühendis & Yönetim Kadromuz</h2>
+        </div>
+        <div class="row">
+            @foreach (var member in Model.TeamMembers)
+            {
+                <div class="col-lg-3 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="team-item">
+                        <div class="team-img">
+                            <img src="@Url.Content(member.ImageUrl)" alt="@member.FullName">
+                        </div>
+                        <div class="team-text">
+                            <h2>@member.FullName</h2>
+                            <p>@member.Designation</p>
+                        </div>
+                        <div class="team-social">
+                            @if (!string.IsNullOrEmpty(member.TwitterUrl))
+                            {
+                                <a class="social-tw" href="@member.TwitterUrl" target="_blank"><i class="fab fa-twitter"></i></a>
+                            }
+                            @if (!string.IsNullOrEmpty(member.FacebookUrl))
+                            {
+                                <a class="social-fb" href="@member.FacebookUrl" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            }
+                            @if (!string.IsNullOrEmpty(member.LinkedInUrl))
+                            {
+                                <a class="social-li" href="@member.LinkedInUrl" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                            }
+                            @if (!string.IsNullOrEmpty(member.InstagramUrl))
+                            {
+                                <a class="social-in" href="@member.InstagramUrl" target="_blank"><i class="fab fa-instagram"></i></a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<!-- Team End -->

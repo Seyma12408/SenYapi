@@ -1,0 +1,236 @@
+@model IEnumerable<ContactMessage>
+@{
+    ViewData["Title"] = "İletişim Mesajları";
+    var currentStatus = ViewBag.Status as string ?? "all";
+    var currentSearch = ViewBag.Search as string ?? "";
+    int totalCount = ViewBag.TotalCount ?? 0;
+    int unreadCount = ViewBag.UnreadCount ?? 0;
+    int readCount = ViewBag.ReadCount ?? 0;
+    int repliedCount = ViewBag.RepliedCount ?? 0;
+    int archivedCount = ViewBag.ArchivedCount ?? 0;
+}
+
+<!-- Alert Bildirimleri -->
+@if (TempData["AdminSuccess"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa fa-check-circle mr-2"></i> @TempData["AdminSuccess"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Kapat">&times;</button>
+    </div>
+}
+
+@if (TempData["AdminError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa fa-exclamation-triangle mr-2"></i> @TempData["AdminError"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Kapat">&times;</button>
+    </div>
+}
+
+<!-- Filtre & Arama Kartı -->
+<div class="card border-0 shadow-sm rounded-lg mb-4">
+    <div class="card-body p-3">
+        <div class="row align-items-center">
+            <!-- Durum Filtre Sekmeleri -->
+            <div class="col-lg-8 col-md-12 mb-3 mb-lg-0">
+                <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <a href="/Admin/Messages?status=all@(string.IsNullOrEmpty(currentSearch) ? "" : "&search=" + currentSearch)" 
+                       class="btn @(currentStatus == "all" ? "btn-warning font-weight-bold" : "btn-outline-secondary")">
+                        <i class="fa fa-inbox mr-1"></i> Tümü (@totalCount)
+                    </a>
+                    <a href="/Admin/Messages?status=unread@(string.IsNullOrEmpty(currentSearch) ? "" : "&search=" + currentSearch)" 
+                       class="btn @(currentStatus == "unread" ? "btn-warning font-weight-bold" : "btn-outline-secondary")">
+                        <i class="fa fa-envelope mr-1"></i> Okunmadı (@unreadCount)
+                    </a>
+                    <a href="/Admin/Messages?status=read@(string.IsNullOrEmpty(currentSearch) ? "" : "&search=" + currentSearch)" 
+                       class="btn @(currentStatus == "read" ? "btn-warning font-weight-bold" : "btn-outline-secondary")">
+                        <i class="fa fa-envelope-open mr-1"></i> Okundu (@readCount)
+                    </a>
+                    <a href="/Admin/Messages?status=replied@(string.IsNullOrEmpty(currentSearch) ? "" : "&search=" + currentSearch)" 
+                       class="btn @(currentStatus == "replied" ? "btn-warning font-weight-bold" : "btn-outline-secondary")">
+                        <i class="fa fa-reply-all mr-1"></i> Yanıtlandı (@repliedCount)
+                    </a>
+                    <a href="/Admin/Messages?status=archived@(string.IsNullOrEmpty(currentSearch) ? "" : "&search=" + currentSearch)" 
+                       class="btn @(currentStatus == "archived" ? "btn-warning font-weight-bold" : "btn-outline-secondary")">
+                        <i class="fa fa-archive mr-1"></i> Arşiv (@archivedCount)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Arama Kutusu -->
+            <div class="col-lg-4 col-md-12">
+                <form method="get" action="/Admin/Messages" class="d-flex">
+                    <input type="hidden" name="status" value="@currentStatus" />
+                    <div class="input-group input-group-sm w-100">
+                        <input type="text" name="search" class="form-control" placeholder="İsim, e-posta, konu veya mesaj ara..." value="@currentSearch" />
+                        <div class="input-group-append">
+                            <button class="btn btn-dark" type="submit" title="Ara">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            @if (!string.IsNullOrEmpty(currentSearch))
+                            {
+                                <a href="/Admin/Messages?status=@currentStatus" class="btn btn-outline-secondary" title="Aramayı Temizle">
+                                    <i class="fa fa-times"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mesaj Listesi Kartı -->
+<div class="card border-0 shadow-sm rounded-lg overflow-hidden">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+        <h5 class="mb-0 font-weight-bold text-dark">
+            <i class="fa fa-envelope-open-text text-warning mr-2"></i> İletişim Mesajları (@Model.Count())
+        </h5>
+        @if (unreadCount > 0)
+        {
+            <span class="badge badge-warning text-dark px-2 py-1 font-weight-bold">
+                @unreadCount okunmamış mesaj
+            </span>
+        }
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="thead-dark">
+                    <tr>
+                        <th style="width: 130px;">Tarih</th>
+                        <th style="width: 160px;">Gönderen</th>
+                        <th style="width: 180px;">E-Posta</th>
+                        <th>Konu & Özet</th>
+                        <th style="width: 120px;">Durum</th>
+                        <th style="width: 170px;">Son Yanıt</th>
+                        <th class="text-right" style="min-width: 200px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var msg in Model)
+                        {
+                            <tr class="@(!msg.IsRead && !msg.IsArchived ? "table-warning font-weight-bold" : "")">
+                                <td class="small text-muted align-middle">
+                                    @msg.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                </td>
+                                <td class="align-middle">
+                                    <span class="text-dark font-weight-bold">@msg.Name</span>
+                                </td>
+                                <td class="align-middle">
+                                    <a href="mailto:@msg.Email" class="text-primary small" title="E-posta gönder">@msg.Email</a>
+                                </td>
+                                <td class="align-middle">
+                                    <a href="/Admin/MessageDetail/@msg.Id" class="text-dark font-weight-bold text-decoration-none d-block">
+                                        @msg.Subject
+                                    </a>
+                                    <span class="text-muted small d-inline-block text-truncate" style="max-width: 280px;">
+                                        @msg.Message
+                                    </span>
+                                </td>
+                                <td class="align-middle">
+                                    @if (msg.AdminHasUnreadReply)
+                                    {
+                                        <span class="badge badge-info text-white px-2 py-1 font-weight-bold"><i class="fa fa-reply-all mr-1"></i> Kullanıcı Yanıtladı</span>
+                                    }
+                                    else if (msg.IsArchived)
+                                    {
+                                        <span class="badge badge-dark px-2 py-1"><i class="fa fa-archive mr-1"></i> Arşivlendi</span>
+                                    }
+                                    else if (msg.IsReplied)
+                                    {
+                                        <span class="badge badge-success px-2 py-1"><i class="fa fa-check-circle mr-1"></i> Yanıtlandı</span>
+                                    }
+                                    else if (msg.IsRead)
+                                    {
+                                        <span class="badge badge-secondary px-2 py-1"><i class="fa fa-envelope-open mr-1"></i> Okundu</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning text-dark px-2 py-1 font-weight-bold"><i class="fa fa-envelope mr-1"></i> Yeni</span>
+                                    }
+                                </td>
+                                <td class="align-middle small">
+                                    @if (msg.IsReplied && msg.RepliedAt.HasValue)
+                                    {
+                                        <span class="text-success font-weight-bold d-block">
+                                            <i class="fa fa-reply mr-1"></i> @msg.RepliedAt.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(msg.RepliedBy))
+                                        {
+                                            <span class="text-muted small">(@msg.RepliedBy)</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-right align-middle">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Detay & Yanıt Sayfası Butonu -->
+                                        <a href="/Admin/MessageDetail/@msg.Id" class="btn btn-warning font-weight-bold" title="Detay ve Yanıt Yaz">
+                                            <i class="fa fa-reply mr-1"></i> İncele / Yanıtla
+                                        </a>
+
+                                        <!-- Okundu / Okunmadı Durum Değiştirme -->
+                                        @if (!msg.IsRead)
+                                        {
+                                            <form action="/Admin/MarkMessageAsRead/@msg.Id" method="post" class="d-inline m-0">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="returnAction" value="Messages" />
+                                                <button type="submit" class="btn btn-outline-success" title="Okundu Yap">
+                                                    <i class="fa fa-check"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form action="/Admin/MarkMessageAsUnread/@msg.Id" method="post" class="d-inline m-0">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="returnAction" value="Messages" />
+                                                <button type="submit" class="btn btn-outline-secondary" title="Okunmadı Olarak İşaretle">
+                                                    <i class="fa fa-envelope"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <!-- Arşivle / Arşivden Çıkar -->
+                                        <form action="/Admin/ToggleArchiveMessage/@msg.Id" method="post" class="d-inline m-0">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnAction" value="Messages" />
+                                            <button type="submit" class="btn btn-outline-info" title="@(msg.IsArchived ? "Arşivden Çıkar" : "Arşivle")">
+                                                <i class="fa @(msg.IsArchived ? "fa-box-open" : "fa-archive")"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Silme Butonu -->
+                                        <form action="/Admin/DeleteMessage/@msg.Id" method="post" class="d-inline m-0" onsubmit="return confirm('Bu mesajı silmek istediğinize emin misiniz?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnAction" value="Messages" />
+                                            <button type="submit" class="btn btn-outline-danger" title="Kalıcı Olarak Sil">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fa fa-inbox fa-3x mb-3 text-muted d-block"></i>
+                                Gösterilecek mesaj bulunamadı.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

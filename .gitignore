@@ -1,0 +1,52 @@
+## Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+*.ide/
+
+## Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]rms/
+[Aa]rm64/
+build/
+SeymaBuild/Builderz/
+
+## Outbox directories (Local mail and SMS test logs)
+**/wwwroot/mail-outbox/*
+!**/wwwroot/mail-outbox/.gitkeep
+**/wwwroot/sms-outbox/*
+!**/wwwroot/sms-outbox/.gitkeep
+
+## Local database & backup files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.bak
+
+## User Secrets & sensitive environment files
+secrets.json
+.env
+.env.*
+!.env.example
+
+## OS generated files
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+.DS_Store
+
+## Log files
+*.log
