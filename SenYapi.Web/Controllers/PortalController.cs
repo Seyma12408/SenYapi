@@ -80,8 +80,27 @@ public class PortalController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Challenge();
 
-        user.FullName = fullName?.Trim() ?? string.Empty;
-        user.PhoneNumber = phoneNumber?.Trim();
+        // 1. Ad Soyad Doğrulaması
+        if (!ValidationHelper.IsCleanText(fullName, minLength: 2, maxLength: 100))
+        {
+            TempData["PortalError"] = "Ad ve soyad alanı zorunludur ve en az 2 karakter olmalıdır.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        // 2. Telefon Numarası Doğrulaması (İsteğe bağlı, ancak girilmişse geçerli Türkiye cep telefonu olmalı)
+        string? cleanPhone = null;
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            if (!PhoneHelper.IsValidMobile(phoneNumber))
+            {
+                TempData["PortalError"] = "Geçersiz telefon numarası. Lütfen başında 0 bulunan 11 haneli veya +90 ile başlayan geçerli bir cep telefonu numarası giriniz. (Örn: 0532 123 45 67)";
+                return RedirectToAction(nameof(Profile));
+            }
+            cleanPhone = PhoneHelper.FormatDisplay(phoneNumber);
+        }
+
+        user.FullName = fullName.Trim();
+        user.PhoneNumber = cleanPhone;
 
         if (profilePhoto != null && profilePhoto.Length > 0)
         {
@@ -109,7 +128,8 @@ public class PortalController : Controller
         }
         else
         {
-            TempData["PortalError"] = "Profil güncellenirken bir hata oluştu.";
+            var errorList = string.Join(", ", result.Errors.Select(e => e.Description));
+            TempData["PortalError"] = $"Profil güncellenirken hata oluştu: {errorList}";
         }
 
         return RedirectToAction(nameof(Profile));
@@ -139,9 +159,15 @@ public class PortalController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmNewPassword)
     {
-        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+        if (string.IsNullOrWhiteSpace(currentPassword))
         {
-            TempData["PortalError"] = "Yeni şifre en az 6 karakter olmalıdır.";
+            TempData["PortalError"] = "Lütfen mevcut şifrenizi giriniz.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6 || newPassword.Length > 100)
+        {
+            TempData["PortalError"] = "Yeni şifre en az 6, en fazla 100 karakter olmalıdır.";
             return RedirectToAction(nameof(Profile));
         }
 

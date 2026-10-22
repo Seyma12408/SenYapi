@@ -79,6 +79,26 @@ public class ContactController : Controller
             dto.UserId = _userManager.GetUserId(User);
         }
 
+        if (!ValidationHelper.IsCleanText(dto.Name, 2, 100))
+        {
+            ModelState.AddModelError(nameof(dto.Name), "Lütfen adınızı ve soyadınızı geçerli bir biçimde giriniz (en az 2 karakter).");
+        }
+
+        if (!ValidationHelper.IsValidEmail(dto.Email))
+        {
+            ModelState.AddModelError(nameof(dto.Email), "Lütfen geçerli bir e-posta adresi giriniz (Örn: ad.soyad@ornek.com).");
+        }
+
+        if (!ValidationHelper.IsCleanText(dto.Subject, 2, 150))
+        {
+            ModelState.AddModelError(nameof(dto.Subject), "Lütfen en az 2 karakterden oluşan bir konu başlığı giriniz.");
+        }
+
+        if (!ValidationHelper.IsCleanText(dto.Message, 5, 2000))
+        {
+            ModelState.AddModelError(nameof(dto.Message), "Lütfen en az 5, en fazla 2000 karakterden oluşan bir mesaj yazınız.");
+        }
+
         if (ModelState.IsValid)
         {
             var success = await _contactService.SaveMessageAsync(dto);

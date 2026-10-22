@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -52,6 +53,10 @@ public class FileService : IFileService
         if (!file.ContentType.StartsWith("image/"))
             return (false, null, "Yüklenen dosya geçerli bir görsel türü değil.");
 
+        // Gerçek dosya içeriği (Magic Bytes / Dosya İmzası) doğrulaması
+        if (!ValidateFileSignature(file, ext))
+            return (false, null, "Yüklenen dosyanın gerçek içeriği belirtilen görsel formatıyla uyuşmuyor.");
+
         return await SaveFileInternalAsync(file, folderName, ext, preferredSlugOrName);
     }
 
@@ -70,7 +75,108 @@ public class FileService : IFileService
         if (file.ContentType != "application/pdf")
             return (false, null, "Yüklenen dosya geçerli bir PDF formatında değil.");
 
+        // Gerçek dosya içeriği (Magic Bytes) doğrulaması: %PDF-
+        if (!ValidateFileSignature(file, ext))
+            return (false, null, "Yüklenen dosyanın içeriği geçerli bir PDF belgesi ile uyuşmuyor.");
+
         return await SaveFileInternalAsync(file, folderName, ext);
+    }
+
+    public static bool ValidateFileSignature(IFormFile file, string ext)
+    {
+        try
+        {
+            using var stream = file.OpenReadStream();
+            return ValidateFileSignature(stream, ext);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static bool ValidateFileSignature(Stream stream, string ext)
+    {
+        try
+        {
+            var initialPosition = stream.CanSeek ? stream.Position : 0;
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+
+            byte[] headerBytes = reader.ReadBytes(12);
+            if (headerBytes.Length < 4)
+            {
+                if (stream.CanSeek) stream.Position = initialPosition;
+                return false;
+            }
+
+            bool isValid = false;
+            switch (ext.ToLowerInvariant())
+            {
+                case ".jpg":
+                case ".jpeg":
+                    // JPEG: FF D8 FF
+                    isValid = headerBytes[0] == 0xFF && headerBytes[1] == 0xD8 && headerBytes[2] == 0xFF;
+                    break;
+
+                case ".png":
+                    // PNG: 89 50 4E 47 0D 0A 1A 0A
+                    isValid = headerBytes.Length >= 8 &&
+                              headerBytes[0] == 0x89 && headerBytes[1] == 0x50 && headerBytes[2] == 0x4E && headerBytes[3] == 0x47 &&
+                              headerBytes[4] == 0x0D && headerBytes[5] == 0x0A && headerBytes[6] == 0x1A && headerBytes[7] == 0x0A;
+                    break;
+
+                case ".webp":
+                    // WEBP: RIFF .... WEBP
+                    if (headerBytes.Length >= 12)
+                    {
+                        bool isRiff = headerBytes[0] == 0x52 && headerBytes[1] == 0x49 && headerBytes[2] == 0x46 && headerBytes[3] == 0x46;
+                        bool isWebp = headerBytes[8] == 0x57 && headerBytes[9] == 0x45 && headerBytes[10] == 0x42 && headerBytes[11] == 0x50;
+                        isValid = isRiff && isWebp;
+                    }
+                    break;
+
+                case ".pdf":
+                    // PDF: %PDF (25 50 44 46)
+                    isValid = headerBytes[0] == 0x25 && headerBytes[1] == 0x50 && headerBytes[2] == 0x44 && headerBytes[3] == 0x46;
+                    break;
+
+                case ".ico":
+                    // ICO: 00 00 01 00
+                    isValid = headerBytes[0] == 0x00 && headerBytes[1] == 0x00 && headerBytes[2] == 0x01 && headerBytes[3] == 0x00;
+                    break;
+
+                case ".svg":
+                    if (stream.CanSeek) stream.Position = initialPosition;
+                    using (var textReader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 2048, leaveOpen: true))
+                    {
+                        var buffer = new char[2048];
+                        int read = textReader.Read(buffer, 0, buffer.Length);
+                        var text = new string(buffer, 0, read).ToLowerInvariant();
+                        if (!text.Contains("<svg") && !text.Contains("<?xml"))
+                            isValid = false;
+                        else if (text.Contains("<script") || text.Contains("javascript:") || text.Contains("onload=") || text.Contains("onerror="))
+                            isValid = false;
+                        else
+                            isValid = true;
+                    }
+                    break;
+
+                default:
+                    isValid = false;
+                    break;
+            }
+
+            if (stream.CanSeek)
+            {
+                stream.Position = initialPosition;
+            }
+
+            return isValid;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task<(bool Success, string? FilePath, string? ErrorMessage)> SaveFileInternalAsync(IFormFile file, string folderName, string ext, string? preferredSlugOrName = null)

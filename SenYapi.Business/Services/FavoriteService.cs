@@ -37,9 +37,17 @@ public class FavoriteService : IFavoriteService
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-            await _context.FavoriteProjects.AddAsync(fav);
-            await _context.SaveChangesAsync();
-            return true; // Added
+            try
+            {
+                await _context.FavoriteProjects.AddAsync(fav);
+                await _context.SaveChangesAsync();
+                return true; // Added
+            }
+            catch (DbUpdateException)
+            {
+                // Benzersiz indeks kısıtlaması nedeniyle eşzamanlı isteklerde kayıt zaten eklenmişse hata verme
+                return true;
+            }
         }
     }
 

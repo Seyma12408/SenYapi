@@ -144,7 +144,7 @@ public class BlogController : Controller
             return Redirect($"/blog/{returnSlug}#yorum-formu");
         }
 
-        if (string.IsNullOrWhiteSpace(comment) || comment.Length < 3 || comment.Length > 2000)
+        if (string.IsNullOrWhiteSpace(comment) || comment.Trim().Length < 3 || comment.Trim().Length > 2000)
         {
             TempData["CommentError"] = "Yorum 3 ile 2000 karakter arasında olmalıdır.";
             TempData["PreservedComment"] = comment;
@@ -154,13 +154,45 @@ public class BlogController : Controller
             return Redirect($"/blog/{returnSlug}#yorum-formu");
         }
 
+        var post = await _blogService.GetPostByIdAsync(blogPostId);
+        if (post == null || !post.IsPublished)
+        {
+            TempData["CommentError"] = "Yorum yapılmak istenen yazı bulunamadı veya yayında değil.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Üst yorum (Parent Comment) geçerlilik ve ilişki kontrolü
+        if (parentCommentId.HasValue && parentCommentId.Value > 0)
+        {
+            var parent = post.Comments?.FirstOrDefault(c => c.Id == parentCommentId.Value && !c.IsDeleted);
+            if (parent == null)
+            {
+                TempData["CommentError"] = "Yanıtlanmak istenen ana yorum bulunamadı veya silinmiş.";
+                return Redirect($"/blog/{returnSlug}#yorum-alani");
+            }
+        }
+
+        // Web sitesi URL formatı ve XSS koruması
+        string? cleanWebsite = null;
+        if (!string.IsNullOrWhiteSpace(website))
+        {
+            if (!ValidationHelper.IsValidUrl(website))
+            {
+                TempData["CommentError"] = "Lütfen geçerli bir web sitesi adresi giriniz. (Örn: https://www.example.com)";
+                TempData["PreservedComment"] = comment;
+                TempData["PreservedName"] = name;
+                TempData["PreservedEmail"] = email;
+                TempData["PreservedWebsite"] = website;
+                return Redirect($"/blog/{returnSlug}#yorum-formu");
+            }
+            cleanWebsite = website.Trim();
+        }
+
         string userId = null!;
         string commenterName = name?.Trim() ?? string.Empty;
         string commenterEmail = email?.Trim() ?? string.Empty;
         bool isStaff = false;
         string? userRole = null;
-
-        var post = await _blogService.GetPostByIdAsync(blogPostId);
 
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -186,9 +218,9 @@ public class BlogController : Controller
                     isStaff = true;
                     userRole = "Editör";
                 }
-                else if (post != null && (!string.IsNullOrWhiteSpace(post.Author) && 
+                else if (!string.IsNullOrWhiteSpace(post.Author) && 
                     (string.Equals(post.Author, currentUser.FullName, StringComparison.OrdinalIgnoreCase) || 
-                     string.Equals(post.Author, currentUser.UserName, StringComparison.OrdinalIgnoreCase))))
+                     string.Equals(post.Author, currentUser.UserName, StringComparison.OrdinalIgnoreCase)))
                 {
                     isStaff = true;
                     userRole = "Yazar";
@@ -201,9 +233,19 @@ public class BlogController : Controller
         }
         else
         {
-            if (string.IsNullOrWhiteSpace(commenterName) || string.IsNullOrWhiteSpace(commenterEmail))
+            if (!ValidationHelper.IsCleanText(commenterName, minLength: 2, maxLength: 100))
             {
-                TempData["CommentError"] = "Lütfen adınızı ve geçerli bir e-posta adresini giriniz.";
+                TempData["CommentError"] = "Lütfen adınızı ve soyadınızı giriniz (en az 2 karakter).";
+                TempData["PreservedComment"] = comment;
+                TempData["PreservedName"] = name;
+                TempData["PreservedEmail"] = email;
+                TempData["PreservedWebsite"] = website;
+                return Redirect($"/blog/{returnSlug}#yorum-formu");
+            }
+
+            if (!ValidationHelper.IsValidEmail(commenterEmail))
+            {
+                TempData["CommentError"] = "Lütfen geçerli bir e-posta adresi giriniz. (Örn: ad.soyad@example.com)";
                 TempData["PreservedComment"] = comment;
                 TempData["PreservedName"] = name;
                 TempData["PreservedEmail"] = email;

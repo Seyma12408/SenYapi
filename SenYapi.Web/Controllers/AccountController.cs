@@ -73,6 +73,7 @@ public class AccountController : Controller
 
     [HttpGet]
     [Route("giris-yap")]
+    [Route("giris")]
     [Route("Account/Login")]
     public IActionResult Login(string? returnUrl = null)
     {
@@ -86,6 +87,7 @@ public class AccountController : Controller
 
     [HttpPost]
     [Route("giris-yap")]
+    [Route("giris")]
     [Route("Account/Login")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(
@@ -232,8 +234,36 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var cleanUserName = model.UserName.Trim();
-        var cleanEmail = model.Email.Trim().ToLowerInvariant();
+        var cleanFullName = model.FullName?.Trim() ?? string.Empty;
+        var cleanUserName = model.UserName?.Trim() ?? string.Empty;
+        var cleanEmail = model.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        // 1. Ad Soyad kontrolü
+        if (!ValidationHelper.IsCleanText(cleanFullName, minLength: 2, maxLength: 100))
+        {
+            ModelState.AddModelError("FullName", "Lütfen geçerli bir ad ve soyad giriniz (en az 2 karakter).");
+            return View(model);
+        }
+
+        // 2. E-Posta format kontrolü
+        if (!ValidationHelper.IsValidEmail(cleanEmail))
+        {
+            ModelState.AddModelError("Email", "Lütfen geçerli bir e-posta adresi giriniz. (Örn: ad.soyad@example.com)");
+            return View(model);
+        }
+
+        // 3. Şifre kontrolü
+        if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6 || model.Password.Length > 100)
+        {
+            ModelState.AddModelError("Password", "Şifre en az 6, en fazla 100 karakter olmalıdır.");
+            return View(model);
+        }
+
+        if (model.Password != model.ConfirmPassword)
+        {
+            ModelState.AddModelError("ConfirmPassword", "Şifreler uyuşmuyor.");
+            return View(model);
+        }
 
         // Unique username check
         var existingByUsername = await _userManager.FindByNameAsync(cleanUserName);
@@ -255,7 +285,7 @@ public class AccountController : Controller
         {
             UserName = cleanUserName,
             Email = cleanEmail,
-            FullName = model.FullName.Trim(),
+            FullName = cleanFullName,
             EmailConfirmed = true,
             LockoutEnabled = true,
             CreatedAt = DateTime.UtcNow
@@ -319,6 +349,12 @@ public class AccountController : Controller
                 if (string.IsNullOrWhiteSpace(model.PhoneNumber))
                 {
                     ModelState.AddModelError("PhoneNumber", "Lütfen cep telefonu numaranızı giriniz.");
+                    return View(model);
+                }
+
+                if (!PhoneHelper.IsValidMobile(model.PhoneNumber))
+                {
+                    ModelState.AddModelError("PhoneNumber", "Lütfen başında 0 bulunan 11 haneli veya +90 ile başlayan geçerli bir Türkiye cep telefonu numarası giriniz. (Örn: 0532 123 45 67)");
                     return View(model);
                 }
 
@@ -403,6 +439,12 @@ public class AccountController : Controller
             if (string.IsNullOrWhiteSpace(model.Email))
             {
                 ModelState.AddModelError("Email", "Lütfen e-posta adresinizi giriniz.");
+                return View(model);
+            }
+
+            if (!ValidationHelper.IsValidEmail(model.Email))
+            {
+                ModelState.AddModelError("Email", "Lütfen geçerli bir e-posta adresi giriniz. (Örn: ad.soyad@example.com)");
                 return View(model);
             }
 

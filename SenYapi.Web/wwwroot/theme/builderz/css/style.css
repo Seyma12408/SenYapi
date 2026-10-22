@@ -1230,92 +1230,214 @@ a:focus {
     padding: 45px 0 15px 0;
 }
 
-.blog .blog-item {
-    position: relative;
-    width: 100%;
-    text-align: center;
+/* Grid ve Kart Eşitleme (Flexbox) */
+.blog .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.blog .row > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
     margin-bottom: 30px;
 }
 
+/* Ana Blog Kartı - Temiz Beyaz Gövde, Hafif Gölge ve Hover Hareketi */
+.blog .blog-item {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform .25s ease, box-shadow .25s ease;
+    text-align: left;
+    margin-bottom: 0;
+}
+
+.blog .blog-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(3, 15, 39, 0.12);
+}
+
+/* Blog Görseli - 16:9 Ortak En-Boy Oranı, Esnetilmeden Orantılı Kaplama */
 .blog .blog-img {
     position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
+    background-color: #f4f6f9;
 }
 
 .blog .blog-img img {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform .4s ease;
 }
 
-.blog .blog-title {
+.blog .blog-item:hover .blog-img img {
+    transform: scale(1.06);
+}
+
+/* Kart İçerik Gövdesi - Flex Column, Alt Alanları Otomatik Eşitleme */
+.blog .blog-content {
     display: flex;
-    align-items: center;
-    height: 60px;
-    background: #030f27;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.blog .blog-title h3 {
-    margin: 0;
-    padding: 0 15px 0 25px;
-    width: calc(100% - 60px);
-    font-size: 18px;
-    font-weight: 700;
-    color: #fdbe33;
+    flex-direction: column;
+    flex: 1 1 auto;
+    padding: 22px 24px;
+    background: #ffffff;
     text-align: left;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
-.blog .blog-title a.btn {
-    display: none !important;
-}
-
-.blog .blog-item:hover a.btn {
-    color: #ffffff;
-}
-
+/* Meta Bilgileri (Kategori, Yazar, Tarih) - Esnek Satır, Dar Ekranda Taşmayan Yapı */
 .blog .blog-meta {
     position: relative;
-    padding: 25px 0 10px 0;
-    background: #f3f6ff;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 0 0 12px 0;
+    margin-bottom: 12px;
+    background: transparent;
+    border-bottom: 1px solid #f0f2f5;
+    text-align: left;
 }
 
 .blog .blog-meta::after {
-    position: absolute;
-    content: "";
-    width: 100px;
-    height: 1px;
-    left: calc(50% - 50px);
-    bottom: 0;
-    background: #fdbe33;
+    display: none;
 }
 
-.blog .blog-meta p {
-    display: inline-block;
+.blog .blog-meta .blog-meta-item {
+    display: inline-flex;
+    align-items: center;
     margin: 0;
-    padding: 0 3px;
-    font-size: 14px;
-    font-weight: 300;
-    font-style: italic;
-    color: #666666;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6c757d;
+    white-space: nowrap;
 }
 
-.blog .blog-meta p a {
-    margin-left: 5px;
-    font-style: normal;
+.blog .blog-meta .blog-meta-category {
+    background: #fff8e6;
+    color: #030f27;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(253, 190, 51, 0.45);
 }
 
+.blog .blog-meta .blog-meta-category i {
+    color: #e09e0a !important;
+}
+
+/* Başlık - Koyu Zemin Çakışması Yok, Okunaklı 19px Koyu Lacivert, 2 Satır Sınırı */
+.blog .blog-title,
+.blog h3.blog-title {
+    margin: 0 0 12px 0;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    background: transparent;
+    border: none;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: left;
+    min-height: 2.8em;
+    overflow: hidden;
+    white-space: normal;
+}
+
+.blog .blog-title a,
+.blog .blog-title a:visited,
+.blog h3.blog-title a,
+.blog h3.blog-title a:visited {
+    color: #030f27;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    transition: color .2s ease;
+}
+
+.blog .blog-title a:hover,
+.blog .blog-title a:focus,
+.blog h3.blog-title a:hover,
+.blog h3.blog-title a:focus {
+    color: #fdbe33;
+    text-decoration: none;
+}
+
+/* Açıklama Alanı - Esnek, Metni Kırpan Sabit Yüksekliksiz */
 .blog .blog-text {
-    padding: 10px 25px 25px 25px;
-    background: #f3f6ff;
+    padding: 0;
+    margin: 0 0 16px 0;
+    background: transparent;
+    text-align: left;
+    flex: 1 0 auto;
 }
 
 .blog .blog-text p {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #555555;
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+/* Devamını Oku Bağlantısı - Kartın En Altına Otomatik Yaslanır */
+.blog .blog-action {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid #f8f9fa;
+}
+
+.blog .blog-read-more {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #030f27;
+    text-decoration: none;
+    transition: color .2s ease;
+}
+
+.blog .blog-read-more i {
+    font-size: 13px;
+    line-height: 1;
+    margin-left: 8px;
+    color: #fdbe33;
+    transition: transform .2s ease, color .2s ease;
+}
+
+.blog .blog-read-more:hover,
+.blog .blog-read-more:focus {
+    color: #fdbe33;
+    text-decoration: none;
+}
+
+.blog .blog-read-more:hover i,
+.blog .blog-read-more:focus i {
+    transform: translateX(5px);
 }
 
 .blog .pagination .page-link {
@@ -1819,88 +1941,238 @@ a:focus {
     background: #030f27;
 }
 
-.portfolio .portfolio-warp {
-    position: relative;
-    width: 100%;
-    text-align: center;
+/* ==========================================================================
+   PORTFOLIO (PROJELER) KARTLARI
+   ========================================================================== */
+.portfolio .row.portfolio-container,
+.portfolio .portfolio-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.portfolio .portfolio-item {
+    display: flex;
+    flex-direction: column;
     margin-bottom: 30px;
 }
 
+/* Ana Proje Kartı - Koyu Lacivert Zemin, Köşe Yuvarlatma, Gri Şeritsiz */
+.portfolio .portfolio-warp {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #030f27;
+    border-radius: 8px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 16px rgba(3, 15, 39, 0.15);
+    transition: transform .25s ease, box-shadow .25s ease;
+    text-align: left;
+    margin-bottom: 0;
+}
+
+.portfolio .portfolio-warp:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(3, 15, 39, 0.28);
+}
+
+/* Görsel Alanı - 16:9 Ortak En-Boy Oranı, Orantılı Kaplama */
 .portfolio .portfolio-img {
     position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
+    background-color: #020a1a;
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
 .portfolio .portfolio-img img {
     width: 100%;
-    transition: .3s;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border: none;
+    transition: transform .4s ease;
 }
 
-.portfolio .portfolio-item:hover img {
-    transform: scale(1.1);
+.portfolio .portfolio-warp:hover .portfolio-img img {
+    transform: scale(1.06);
 }
 
+/* Hover Açıklama Katmanı - Normalde Gizli, Hover'da Okunabilir Koyu Katman */
 .portfolio .portfolio-overlay {
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    padding: 30px;
+    padding: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(3, 15, 39, .7);
-    transition: .5s;
+    background: rgba(3, 15, 39, 0.88);
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .3s ease, visibility .3s ease;
+    z-index: 2;
 }
 
 .portfolio .portfolio-warp:hover .portfolio-overlay {
     opacity: 1;
+    visibility: visible;
 }
 
 .portfolio .portfolio-overlay p {
     margin: 0;
     color: #ffffff;
-}
-
-.portfolio .portfolio-text {
-    display: flex;
-    align-items: center;
-    height: 60px;
-    background: #030f27;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.portfolio .portfolio-text h3 {
-    margin: 0;
-    padding: 0 15px 0 25px;
-    width: calc(100% - 60px);
-    font-size: 20px;
-    font-weight: 700;
-    color: #fdbe33;
+    font-size: 14px;
+    line-height: 1.6;
     text-align: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    white-space: nowrap;
     text-overflow: ellipsis;
+    word-break: break-word;
 }
 
-.portfolio .portfolio-warp a.btn {
+/* Büyüteç Butonu - Görsel üzerinde düzenli, şık daire buton */
+.portfolio .portfolio-zoom-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(3, 15, 39, 0.85);
+    color: #fdbe33;
+    border: 1.5px solid #fdbe33;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: auto;
-    height: auto;
-    font-size: 14px;
-    line-height: 1.4;
-    border-radius: 4px;
+    text-decoration: none;
+    z-index: 5;
+    transition: all .2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    padding: 0;
 }
 
-.portfolio .portfolio-warp:hover a.btn {
-    color: #ffffff;
+.portfolio .portfolio-zoom-btn i {
+    font-size: 16px;
+    line-height: 1;
+    color: #fdbe33;
+    transition: color .2s ease, transform .2s ease;
+}
+
+.portfolio .portfolio-zoom-btn:hover,
+.portfolio .portfolio-zoom-btn:focus {
     background: #fdbe33;
+    color: #030f27;
+    border-color: #fdbe33;
+    transform: scale(1.1);
+}
+
+.portfolio .portfolio-zoom-btn:hover i,
+.portfolio .portfolio-zoom-btn:focus i {
+    color: #030f27;
+}
+
+/* Kart Alt Metin Alanı - Koyu Lacivert Zemin, Gri Şeritsiz, Flex Column */
+.portfolio .portfolio-text {
+    position: relative;
+    padding: 20px 22px 18px 22px;
+    background: #030f27;
+    border: none;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    text-align: left;
+}
+
+/* Başlık - 2 Satıra Kadar, Beyaz Renk, Kelime Taşması Engelli */
+.portfolio .portfolio-text h3,
+.portfolio .portfolio-text .portfolio-title {
+    margin: 0 0 12px 0;
+    padding: 0;
+    width: 100%;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: left;
+    min-height: 2.8em;
+    overflow: hidden;
+    white-space: normal;
+}
+
+.portfolio .portfolio-text h3 a,
+.portfolio .portfolio-text h3 a:visited,
+.portfolio .portfolio-text .portfolio-title a,
+.portfolio .portfolio-text .portfolio-title a:visited {
+    color: #ffffff;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    transition: color .2s ease;
+}
+
+.portfolio .portfolio-text h3 a:hover,
+.portfolio .portfolio-text h3 a:focus,
+.portfolio .portfolio-text .portfolio-title a:hover,
+.portfolio .portfolio-text .portfolio-title a:focus {
+    color: #fdbe33;
+    text-decoration: none;
+}
+
+/* Projeyi İncele Bağlantısı - Başlığın altında, kartın en altına hizalı, Sarı Renk */
+.portfolio .portfolio-action {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.portfolio .project-detail-link,
+.portfolio .portfolio-detail-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fdbe33;
+    text-decoration: none;
+    transition: color .2s ease;
+}
+
+.portfolio .project-detail-link i,
+.portfolio .portfolio-detail-link i {
+    font-size: 13px;
+    line-height: 1;
+    margin-left: 8px;
+    transition: transform .2s ease;
+}
+
+.portfolio .project-detail-link:hover,
+.portfolio .project-detail-link:focus,
+.portfolio .portfolio-detail-link:hover,
+.portfolio .portfolio-detail-link:focus {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.portfolio .project-detail-link:hover i,
+.portfolio .project-detail-link:focus i,
+.portfolio .portfolio-detail-link:hover i,
+.portfolio .portfolio-detail-link:focus i {
+    transform: translateX(4px);
 }
 
 
@@ -2225,374 +2497,7 @@ a:focus {
    KAPSAMLI GÖRSEL BOYUTLANDIRMA VE EN-BOY ORANI SİSTEMİ (COMPREHENSIVE IMAGE SIZING)
    ========================================================================== */
 
-/* 1. Blog Kartları - 16:9 Oran, Beyaz İçerik Alanı ve Kart Eşitleme */
-.blog .row {
-    display: flex;
-    flex-wrap: wrap;
-}
-.blog .row > [class*="col-"] {
-    display: flex;
-    flex-direction: column;
-}
-.blog .blog-item {
-    position: relative;
-    width: 100%;
-    text-align: left;
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    height: calc(100% - 30px);
-    background: #ffffff;
-    border: 1px solid #eef2f6;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    transition: transform .25s ease, box-shadow .25s ease;
-}
-.blog .blog-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 22px rgba(3, 15, 39, 0.12);
-}
-.blog .blog-img,
-.blog-item .blog-img {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background-color: #f0f0f0;
-}
-.blog .blog-img img,
-.blog-item .blog-img img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    object-position: center;
-    display: block;
-    transition: transform .35s ease;
-}
-.blog-item:hover .blog-img img {
-    transform: scale(1.05);
-}
-.blog .blog-content {
-    padding: 18px 20px 16px 20px;
-    background: #ffffff;
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    text-align: left;
-}
-.blog .blog-meta {
-    position: relative;
-    padding: 0 0 10px 0;
-    margin-bottom: 8px;
-    background: transparent !important;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid #f0f2f5;
-    text-align: left;
-}
-.blog .blog-meta::after {
-    display: none !important;
-}
-.blog .blog-meta .blog-meta-item,
-.blog .blog-meta p {
-    display: inline-flex;
-    align-items: center;
-    margin: 0;
-    padding: 0;
-    font-size: 13px;
-    font-weight: 500;
-    font-style: normal !important;
-    color: #6c757d;
-}
-.blog .blog-meta a,
-.blog .blog-meta p a {
-    margin-left: 4px;
-    font-style: normal !important;
-    color: #030f27;
-    text-decoration: none;
-    transition: color .2s ease;
-}
-.blog .blog-meta a:hover,
-.blog .blog-meta p a:hover {
-    color: #fdbe33;
-}
-.blog .blog-title {
-    display: block;
-    height: auto !important;
-    min-height: 2.7em;
-    background: transparent !important;
-    overflow: hidden;
-    white-space: normal !important;
-    text-overflow: ellipsis;
-    margin: 0 0 10px 0;
-    padding: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.35;
-    text-align: left;
-}
-.blog .blog-title h3 {
-    margin: 0;
-    padding: 0;
-    width: 100% !important;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.35;
-    text-align: left;
-}
-.blog .blog-title a,
-.blog .blog-title a:visited,
-.blog .blog-title h3 a,
-.blog .blog-title h3 a:visited {
-    color: #030f27 !important;
-    text-decoration: none;
-    transition: color .2s ease;
-}
-.blog .blog-title a:hover,
-.blog .blog-title a:focus,
-.blog .blog-title h3 a:hover,
-.blog .blog-title h3 a:focus {
-    color: #fdbe33 !important;
-    text-decoration: underline;
-}
-.blog .blog-title a.btn {
-    display: none !important;
-}
-.blog .blog-text {
-    padding: 0 !important;
-    background: transparent !important;
-    margin-bottom: 12px;
-    text-align: left;
-}
-.blog .blog-text p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #666666;
-    font-style: normal !important;
-    text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 4.8em;
-}
-.blog-action {
-    margin-top: auto;
-    padding-top: 8px;
-}
-.blog-read-more {
-    display: inline-flex;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 700;
-    color: #030f27 !important;
-    text-decoration: none !important;
-    transition: color .2s ease;
-}
-.blog-read-more i {
-    font-size: 13px !important;
-    line-height: 1 !important;
-    margin-left: 6px;
-    transition: transform .2s ease;
-}
-.blog-read-more:hover,
-.blog-read-more:focus {
-    color: #fdbe33 !important;
-}
-.blog-read-more:hover i,
-.blog-read-more:focus i {
-    transform: translateX(4px);
-}
 
-/* 2. Proje Kartları (Portfolyo) - 16:9 Ortak Oran ve Kart Eşitleme */
-.portfolio-container,
-.portfolio-container > [class*="col-"],
-.portfolio .row > [class*="col-"] {
-    display: flex;
-    flex-direction: column;
-}
-.portfolio .portfolio-warp {
-    position: relative;
-    width: 100%;
-    text-align: left;
-    margin-bottom: 30px;
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    height: calc(100% - 30px);
-    background: #ffffff;
-    border: 1px solid #eef2f6;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    transition: transform .25s ease, box-shadow .25s ease;
-}
-.portfolio .portfolio-warp:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 22px rgba(3, 15, 39, 0.12);
-}
-.portfolio .portfolio-img,
-.portfolio-warp .portfolio-img,
-.portfolio-item .portfolio-img {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background-color: #f0f0f0;
-}
-.portfolio .portfolio-img img,
-.portfolio-warp .portfolio-img img,
-.portfolio-item .portfolio-img img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    object-position: center;
-    display: block;
-    transition: transform .35s ease;
-}
-.portfolio-warp:hover .portfolio-img img,
-.portfolio-item:hover .portfolio-img img {
-    transform: scale(1.05);
-}
-.portfolio .portfolio-overlay p {
-    margin: 0;
-    color: #ffffff;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-/* Sağ üst köşedeki görsel büyütme (lightbox) butonu - 38px daire, 18px ikon */
-.portfolio-zoom-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 50% !important;
-    background: rgba(3, 15, 39, 0.78) !important;
-    color: #ffffff !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-decoration: none !important;
-    z-index: 5;
-    transition: all .25s ease;
-    border: 1px solid rgba(253, 190, 51, 0.5);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    padding: 0 !important;
-}
-.portfolio-zoom-btn i {
-    font-size: 18px !important;
-    line-height: 1 !important;
-    color: #ffffff !important;
-    width: auto !important;
-    height: auto !important;
-    transition: color .2s ease;
-}
-.portfolio-zoom-btn:hover,
-.portfolio-zoom-btn:focus {
-    background: #fdbe33 !important;
-    border-color: #fdbe33;
-    transform: scale(1.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-.portfolio-zoom-btn:hover i,
-.portfolio-zoom-btn:focus i {
-    color: #030f27 !important;
-}
-/* Proje kartı alt metin alanı */
-.portfolio .portfolio-text {
-    padding: 18px 20px 16px 20px;
-    background: #ffffff !important;
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    height: auto !important;
-    min-height: 110px;
-    overflow: visible !important;
-    text-align: left;
-    border-top: 1px solid #f0f2f5;
-}
-.portfolio .portfolio-text h3,
-.portfolio .portfolio-text .portfolio-title {
-    margin: 0 0 10px 0;
-    padding: 0;
-    width: 100% !important;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.35;
-    text-align: left;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    text-overflow: ellipsis;
-    min-height: 2.7em;
-}
-.portfolio .portfolio-text h3 a,
-.portfolio .portfolio-text h3 a:visited,
-.portfolio .portfolio-text .portfolio-title a,
-.portfolio .portfolio-text .portfolio-title a:visited {
-    color: #030f27 !important;
-    text-decoration: none;
-    transition: color .2s ease;
-}
-.portfolio .portfolio-text h3 a:hover,
-.portfolio .portfolio-text h3 a:focus,
-.portfolio .portfolio-text .portfolio-title a:hover,
-.portfolio .portfolio-text .portfolio-title a:focus {
-    color: #fdbe33 !important;
-    text-decoration: underline;
-}
-.portfolio-action {
-    margin-top: auto;
-    padding-top: 8px;
-}
-.project-detail-link,
-.portfolio-detail-link {
-    display: inline-flex;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 700;
-    color: #030f27 !important;
-    text-decoration: none !important;
-    transition: color .2s ease;
-}
-.project-detail-link i,
-.portfolio-detail-link i {
-    font-size: 13px !important;
-    line-height: 1 !important;
-    margin-left: 6px;
-    transition: transform .2s ease;
-}
-.project-detail-link:hover,
-.project-detail-link:focus,
-.portfolio-detail-link:hover,
-.portfolio-detail-link:focus {
-    color: #fdbe33 !important;
-}
-.project-detail-link:hover i,
-.project-detail-link:focus i,
-.portfolio-detail-link:hover i,
-.portfolio-detail-link:focus i {
-    transform: translateX(4px);
-}
-/* Eski 60px kare butonların global kalıntılarını engelle */
-.portfolio .portfolio-warp a.btn {
-    width: auto !important;
-    height: auto !important;
-    font-size: inherit !important;
-    line-height: normal !important;
-}
 
 /* 3. Hizmet Kartları - 16:9 Ortak Oran ve Kart Eşitleme */
 .service .row {

@@ -38,6 +38,12 @@ public class AdminAppointmentsController : AdminBaseController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateAppointmentStatus(int id, string status, string? adminNotes, DateTime? alternativeDate)
     {
+        if (!ValidationHelper.IsValidAppointmentStatus(status))
+        {
+            TempData["AdminError"] = "Geçersiz randevu durumu seçildi.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
         await _appointmentService.UpdateAppointmentStatusAsync(id, status, adminNotes, alternativeDate, CurrentAdminName);
         TempData["AdminSuccess"] = "Randevu durumu başarıyla güncellendi.";
         await _auditLogService.LogAsync(CurrentAdminName, "Randevu Durum Güncelleme", "ProjectAppointment", $"AppointmentId: {id}, Durum: {status}");

@@ -34,16 +34,27 @@
                             </span>
                         </div>
                         <div class="mt-2 mt-sm-0">
+                            <form id="favoriteAntiforgeryForm" style="display:none;">
+                                @Html.AntiForgeryToken()
+                            </form>
                             @if (User.Identity?.IsAuthenticated == true)
                             {
-                                <button type="button" class="btn @(isFav ? "btn-danger" : "btn-outline-danger") font-weight-bold px-3 py-2" id="btnToggleFavorite" data-id="@Model.Id">
-                                    <i class="@(isFav ? "fas" : "far") fa-heart mr-1"></i> <span id="favText">@(isFav ? "Favorilerimde" : "Favoriye Ekle")</span>
+                                <button type="button" 
+                                        class="btn @(isFav ? "btn-danger" : "btn-outline-danger") font-weight-bold px-3 py-2" 
+                                        id="btnToggleFavorite" 
+                                        data-id="@Model.Id"
+                                        title="@(isFav ? "Favorilerden Çıkar" : "Favoriye Ekle")"
+                                        aria-pressed="@(isFav ? "true" : "false")">
+                                    <i class="@(isFav ? "fas" : "far") fa-heart mr-1"></i> <span id="favText">@(isFav ? "Favorilerden Çıkar" : "Favoriye Ekle")</span>
                                 </button>
                             }
                             else
                             {
-                                <a href="/giris?returnUrl=@Url.Action("Detail", "Project", new { slug = Model.Slug })" class="btn btn-outline-danger font-weight-bold px-3 py-2" title="Favorilere eklemek için giriş yapınız">
-                                    <i class="far fa-heart mr-1"></i> Favoriye Ekle
+                                <a href="/giris-yap?returnUrl=@Url.Content(Context.Request.Path)" 
+                                   class="btn btn-outline-danger font-weight-bold px-3 py-2" 
+                                   id="btnToggleFavorite" 
+                                   title="Favorilere eklemek için giriş yapınız">
+                                    <i class="far fa-heart mr-1"></i> <span id="favText">Favoriye Ekle</span>
                                 </a>
                             }
                         </div>
@@ -240,7 +251,8 @@
 
                     <div class="form-group">
                         <label class="font-weight-bold small">Telefon Numaranız</label>
-                        <input type="tel" name="phone" class="form-control" value="@(currentUser?.PhoneNumber ?? "")" placeholder="Örn: 0532 123 4567" />
+                        <input type="tel" name="phone" class="form-control" value="@(currentUser?.PhoneNumber ?? "")" placeholder="Örn: 0532 123 45 67" />
+                        <small class="text-muted d-block mt-1">Örn: 0532 123 45 67 veya +90 532 123 45 67 (WhatsApp veya Telefon seçildiğinde zorunludur)</small>
                     </div>
 
                     <div class="form-group">
@@ -308,8 +320,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="font-weight-bold small">İletişim Numarası</label>
-                            <input type="tel" name="phone" class="form-control" value="@(currentUser?.PhoneNumber ?? "")" placeholder="0532 123 4567" />
+                            <label class="font-weight-bold small">İletişim Numarası <span class="text-danger">*</span></label>
+                            <input type="tel" name="phone" class="form-control" required value="@(currentUser?.PhoneNumber ?? "")" placeholder="Örn: 0532 123 45 67" />
+                            <small class="text-muted d-block mt-1">Örn: 0532 123 45 67 veya +90 532 123 45 67 (Teyit için aranacaksınız)</small>
                         </div>
 
                         <div class="form-group">
@@ -334,50 +347,104 @@
         $(document).ready(function () {
             // Helper to get token
             function getAntiForgeryToken() {
-                return $('input[name="__RequestVerificationToken"]').first().val();
+                var token = $('#favoriteAntiforgeryForm input[name="__RequestVerificationToken"]').val();
+                if (!token) {
+                    token = $('input[name="__RequestVerificationToken"]').first().val();
+                }
+                return token;
             }
 
             // 1. Favorite Toggle
-            $('#btnToggleFavorite').on('click', function () {
+            $('#btnToggleFavorite').on('click', function (e) {
                 var $btn = $(this);
+                var isUserAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
+
+                // Giriş yapılmamışsa doğrudan giriş sayfasına returnUrl ile yönlendir
+                if (!isUserAuthenticated) {
+                    e.preventDefault();
+                    var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = '/giris-yap?returnUrl=' + returnUrl;
+                    return;
+                }
+
+                e.preventDefault();
+
+                // İstek sürerken tekrar tıklamayı engelle
+                if ($btn.prop('disabled') || $btn.hasClass('disabled')) {
+                    return false;
+                }
+
                 var projectId = $btn.data('id');
                 var token = getAntiForgeryToken();
+                var originalHtml = $btn.html();
 
-                $btn.prop('disabled', true);
+                // Butonu devre dışı bırak ve yükleniyor ikonu göster
+                $btn.prop('disabled', true).addClass('disabled').css('pointer-events', 'none');
+                $btn.html('<i class="fa fa-spinner fa-spin mr-1"></i> <span id="favText">İşleniyor...</span>');
 
                 $.ajax({
                     url: '/Project/ToggleFavorite',
                     type: 'POST',
                     data: {
                         projectId: projectId,
+                        returnUrl: window.location.pathname,
                         __RequestVerificationToken: token
                     },
                     success: function (res) {
-                        $btn.prop('disabled', false);
+                        $btn.prop('disabled', false).removeClass('disabled').css('pointer-events', 'auto');
+
+                        // Oturum düşmüşse giriş sayfasına yönlendir
+                        if (res.requireLogin) {
+                            var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                            window.location.href = res.loginUrl || ('/giris-yap?returnUrl=' + returnUrl);
+                            return;
+                        }
+
                         if (res.success) {
                             if (res.isFavorite) {
                                 $btn.removeClass('btn-outline-danger').addClass('btn-danger');
-                                $btn.find('i').removeClass('far').addClass('fas');
-                                $('#favText').text('Favorilerimde');
+                                $btn.attr('title', 'Favorilerden Çıkar');
+                                $btn.attr('aria-pressed', 'true');
+                                $btn.html('<i class="fas fa-heart mr-1"></i> <span id="favText">Favorilerden Çıkar</span>');
                             } else {
                                 $btn.removeClass('btn-danger').addClass('btn-outline-danger');
-                                $btn.find('i').removeClass('fas').addClass('far');
-                                $('#favText').text('Favoriye Ekle');
+                                $btn.attr('title', 'Favoriye Ekle');
+                                $btn.attr('aria-pressed', 'false');
+                                $btn.html('<i class="far fa-heart mr-1"></i> <span id="favText">Favoriye Ekle</span>');
                             }
 
                             $('#projectAlertPlaceholder').html(
-                                '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                '<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">' +
                                 '<i class="fa fa-check-circle mr-1"></i> ' + res.message +
-                                '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>' +
+                                '<button type="button" class="close" data-dismiss="alert" aria-label="Kapat"><span>&times;</span></button>' +
                                 '</div>'
                             );
                         } else {
-                            alert(res.message || 'İşlem gerçekleştirilemedi.');
+                            $btn.html(originalHtml);
+                            $('#projectAlertPlaceholder').html(
+                                '<div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">' +
+                                '<i class="fa fa-exclamation-triangle mr-1"></i> ' + (res.message || 'İşlem gerçekleştirilemedi.') +
+                                '<button type="button" class="close" data-dismiss="alert" aria-label="Kapat"><span>&times;</span></button>' +
+                                '</div>'
+                            );
                         }
                     },
-                    error: function () {
-                        $btn.prop('disabled', false);
-                        alert('Bağlantı hatası oluştu.');
+                    error: function (xhr) {
+                        $btn.prop('disabled', false).removeClass('disabled').css('pointer-events', 'auto');
+                        $btn.html(originalHtml);
+
+                        if (xhr.status === 401 || xhr.status === 403) {
+                            var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                            window.location.href = '/giris-yap?returnUrl=' + returnUrl;
+                            return;
+                        }
+
+                        $('#projectAlertPlaceholder').html(
+                            '<div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">' +
+                            '<i class="fa fa-times-circle mr-1"></i> Bir bağlantı hatası oluştu. Lütfen tekrar deneyiniz.' +
+                            '<button type="button" class="close" data-dismiss="alert" aria-label="Kapat"><span>&times;</span></button>' +
+                            '</div>'
+                        );
                     }
                 });
             });

@@ -62,10 +62,33 @@ public class AdminProjectsController : AdminBaseController
     [HasPermission(Permissions.ProjectCreate)]
     public async Task<IActionResult> AddProject(Project model, IFormFile? imageFile, IFormFile[]? galleryFiles, IFormFile? pdfFile)
     {
-        if (string.IsNullOrWhiteSpace(model.Title))
+        if (string.IsNullOrWhiteSpace(model.Title) || !ValidationHelper.IsCleanText(model.Title, 2, 200))
         {
-            TempData["AdminError"] = "Proje adı zorunludur.";
+            TempData["AdminError"] = "Proje adı en az 2, en fazla 200 karakter olmalıdır.";
             return RedirectToAction(nameof(Projects));
+        }
+
+        if (model.Price.HasValue && model.Price.Value < 0)
+        {
+            TempData["AdminError"] = "Proje fiyatı sıfırdan küçük olamaz.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (decimal.TryParse(model.AreaSquareMeters, out var parsedArea) && parsedArea < 0)
+        {
+            TempData["AdminError"] = "Metrekare alanı sıfırdan küçük olamaz.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.MapEmbedUrl) && !ValidationHelper.IsValidUrl(model.MapEmbedUrl, allowEmbed: true))
+        {
+            TempData["AdminError"] = "Harita bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (!ValidationHelper.IsValidProjectCategory(model.Category))
+        {
+            model.Category = "complete";
         }
 
         // Slug handling & validation
@@ -179,6 +202,35 @@ public class AdminProjectsController : AdminBaseController
         {
             TempData["AdminError"] = "Güncellenecek proje bulunamadı.";
             return RedirectToAction(nameof(Projects));
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Title) || !ValidationHelper.IsCleanText(model.Title, 2, 200))
+        {
+            TempData["AdminError"] = "Proje adı en az 2, en fazla 200 karakter olmalıdır.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (model.Price.HasValue && model.Price.Value < 0)
+        {
+            TempData["AdminError"] = "Proje fiyatı sıfırdan küçük olamaz.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (decimal.TryParse(model.AreaSquareMeters, out var parsedArea) && parsedArea < 0)
+        {
+            TempData["AdminError"] = "Metrekare alanı sıfırdan küçük olamaz.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.MapEmbedUrl) && !ValidationHelper.IsValidUrl(model.MapEmbedUrl, allowEmbed: true))
+        {
+            TempData["AdminError"] = "Harita bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Projects));
+        }
+
+        if (!ValidationHelper.IsValidProjectCategory(model.Category))
+        {
+            model.Category = existing.Category;
         }
 
         var oldSlug = existing.Slug;

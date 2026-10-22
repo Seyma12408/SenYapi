@@ -68,6 +68,12 @@ public class AdminUsersController : AdminBaseController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangeUserRole(string userId, string newRole)
     {
+        if (string.IsNullOrWhiteSpace(userId) || !ValidationHelper.IsValidRole(newRole))
+        {
+            TempData["AdminError"] = "Geçersiz kullanıcı rolü seçimi yapıldı.";
+            return RedirectToAction(nameof(Users));
+        }
+
         var (success, message) = await _adminUserService.ChangeUserRoleAsync(userId, newRole, CurrentAdminName);
         if (success)
             TempData["AdminSuccess"] = message;

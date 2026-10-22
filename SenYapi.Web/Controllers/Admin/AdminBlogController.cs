@@ -62,6 +62,24 @@ public class AdminBlogController : AdminBaseController
     [HasPermission(Permissions.BlogCreate)]
     public async Task<IActionResult> AddPost(BlogPost model, IFormFile? imageFile)
     {
+        if (!ValidationHelper.IsCleanText(model.Title, 2, 200))
+        {
+            var posts = await _blogService.GetAllPostsAsync();
+            ViewBag.FailedModalId = "addPostModal";
+            ViewBag.SlugError = "Lütfen en az 2, en fazla 200 karakterden oluşan geçerli bir başlık giriniz.";
+            ViewBag.PreservedModel = model;
+            return View("~/Views/Admin/Blog.cshtml", posts.ToList());
+        }
+
+        if (!ValidationHelper.IsCleanText(model.Content, 5, 100000))
+        {
+            var posts = await _blogService.GetAllPostsAsync();
+            ViewBag.FailedModalId = "addPostModal";
+            ViewBag.SlugError = "Lütfen geçerli ve en az 5 karakterden oluşan blog içeriği giriniz.";
+            ViewBag.PreservedModel = model;
+            return View("~/Views/Admin/Blog.cshtml", posts.ToList());
+        }
+
         var rawSlug = !string.IsNullOrWhiteSpace(model.Slug) ? model.Slug : model.Title;
         var cleanSlug = SlugHelper.GenerateSlug(rawSlug);
         if (string.IsNullOrWhiteSpace(cleanSlug))
@@ -115,6 +133,24 @@ public class AdminBlogController : AdminBaseController
         {
             TempData["AdminError"] = "Güncellenecek blog yazısı bulunamadı.";
             return RedirectToAction(nameof(Blog));
+        }
+
+        if (!ValidationHelper.IsCleanText(model.Title, 2, 200))
+        {
+            var posts = await _blogService.GetAllPostsAsync();
+            ViewBag.FailedModalId = $"blogEditModal-{model.Id}";
+            ViewBag.SlugError = "Lütfen en az 2, en fazla 200 karakterden oluşan geçerli bir başlık giriniz.";
+            ViewBag.PreservedModel = model;
+            return View("~/Views/Admin/Blog.cshtml", posts.ToList());
+        }
+
+        if (!ValidationHelper.IsCleanText(model.Content, 5, 100000))
+        {
+            var posts = await _blogService.GetAllPostsAsync();
+            ViewBag.FailedModalId = $"blogEditModal-{model.Id}";
+            ViewBag.SlugError = "Lütfen geçerli ve en az 5 karakterden oluşan blog içeriği giriniz.";
+            ViewBag.PreservedModel = model;
+            return View("~/Views/Admin/Blog.cshtml", posts.ToList());
         }
 
         var oldSlug = existing.Slug;

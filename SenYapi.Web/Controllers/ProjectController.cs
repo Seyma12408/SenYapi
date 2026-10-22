@@ -92,14 +92,41 @@ public class ProjectController : Controller
     }
 
     [HttpPost]
-    [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ToggleFavorite([FromForm] int projectId)
+    [Route("Project/ToggleFavorite")]
+    [Route("proje/favori-ekle-cikar")]
+    public async Task<IActionResult> ToggleFavorite([FromForm] int projectId, [FromForm] string? returnUrl = null)
     {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            var targetReturnUrl = !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
+                ? returnUrl
+                : "/projeler";
+
+            return Json(new
+            {
+                success = false,
+                requireLogin = true,
+                loginUrl = $"/giris-yap?returnUrl={Uri.EscapeDataString(targetReturnUrl)}",
+                message = "Favorilere eklemek için lütfen giriş yapınız."
+            });
+        }
+
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId))
         {
-            return Json(new { success = false, message = "Lütfen giriş yapınız." });
+            return Json(new
+            {
+                success = false,
+                requireLogin = true,
+                loginUrl = "/giris-yap",
+                message = "Lütfen giriş yapınız."
+            });
+        }
+
+        if (projectId <= 0)
+        {
+            return Json(new { success = false, message = "Geçersiz proje bilgisi." });
         }
 
         var isFavorite = await _favoriteService.ToggleFavoriteAsync(userId, projectId);
@@ -117,13 +144,71 @@ public class ProjectController : Controller
         [FromForm] int projectId,
         [FromForm] string fullName,
         [FromForm] string email,
-        [FromForm] string phone,
+        [FromForm] string? phone,
         [FromForm] string message,
         [FromForm] string preferredContactMethod)
     {
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(message))
+        // 1. Proje Kontrolü
+        var project = await _projectService.GetProjectByIdAsync(projectId);
+        if (project == null || project.IsDeleted)
         {
-            return Json(new { success = false, message = "Lütfen ad soyad, e-posta ve mesaj alanlarını doldurunuz." });
+            return Json(new { success = false, message = "Talep oluşturulmak istenen proje bulunamadı veya yayından kaldırılmış." });
+        }
+
+        // 2. Ad Soyad Kontrolü
+        if (!ValidationHelper.IsCleanText(fullName, minLength: 2, maxLength: 100))
+        {
+            return Json(new { success = false, message = "Lütfen geçerli bir ad ve soyad giriniz (en az 2 karakter)." });
+        }
+
+        // 3. E-Posta Kontrolü
+        if (!ValidationHelper.IsValidEmail(email))
+        {
+            return Json(new { success = false, message = "Lütfen geçerli bir e-posta adresi giriniz. (Örn: ad.soyad@example.com)" });
+        }
+
+        // 4. Tercih Edilen İletişim Kanalı Kontrolü
+        var contactMethod = !string.IsNullOrWhiteSpace(preferredContactMethod) ? preferredContactMethod.Trim() : "E-posta";
+        if (!ValidationHelper.IsValidContactMethod(contactMethod))
+        {
+            contactMethod = "E-posta";
+        }
+
+        // 5. Telefon Numarası Kontrolü ve Normalizasyonu
+        string savedPhone = string.Empty;
+        if (contactMethod.Equals("WhatsApp", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(phone) || !PhoneHelper.IsValidMobile(phone))
+            {
+                return Json(new { success = false, message = "WhatsApp ile iletişim seçildiğinde geçerli bir Türkiye cep telefonu numarası zorunludur. (Örn: 0532 123 45 67)" });
+            }
+            savedPhone = PhoneHelper.FormatDisplay(phone);
+        }
+        else if (contactMethod.Equals("Telefon", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(phone) || !PhoneHelper.IsValid(phone, allowLandline: true))
+            {
+                return Json(new { success = false, message = "Telefon görüşmesi için geçerli bir telefon numarası giriniz. (Örn: 0532 123 45 67 veya 0212 555 01 23)" });
+            }
+            savedPhone = PhoneHelper.FormatDisplay(phone);
+        }
+        else
+        {
+            // E-posta tercihinde telefon isteğe bağlıdır; ancak girilmişse geçerli olmalıdır
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                if (!PhoneHelper.IsValid(phone, allowLandline: true))
+                {
+                    return Json(new { success = false, message = "Girdiğiniz telefon numarası geçersizdir. Lütfen başında 0 bulunan ve 11 haneli (örn: 0532 123 45 67) veya +90 ile başlayan geçerli bir numara giriniz." });
+                }
+                savedPhone = PhoneHelper.FormatDisplay(phone);
+            }
+        }
+
+        // 6. Mesaj Kontrolü
+        if (!ValidationHelper.IsCleanText(message, minLength: 5, maxLength: 2000))
+        {
+            return Json(new { success = false, message = "Lütfen en az 5, en fazla 2000 karakterden oluşan bir mesaj giriniz." });
         }
 
         string? userId = null;
@@ -137,10 +222,10 @@ public class ProjectController : Controller
             ProjectId = projectId,
             UserId = userId,
             FullName = fullName.Trim(),
-            Email = email.Trim(),
-            Phone = phone?.Trim() ?? string.Empty,
+            Email = email.Trim().ToLowerInvariant(),
+            Phone = savedPhone,
             Message = message.Trim(),
-            PreferredContactMethod = !string.IsNullOrWhiteSpace(preferredContactMethod) ? preferredContactMethod : "E-posta",
+            PreferredContactMethod = contactMethod,
             Status = "Beklemede",
             CreatedAt = DateTime.UtcNow
         };
@@ -164,15 +249,42 @@ public class ProjectController : Controller
         [FromForm] string? phone,
         [FromForm] string? notes)
     {
-        if (preferredDate.Date < DateTime.Today)
+        // 1. Proje Kontrolü
+        var project = await _projectService.GetProjectByIdAsync(projectId);
+        if (project == null || project.IsDeleted)
         {
-            return Json(new { success = false, message = "Geçmiş bir tarih için randevu talep edilemez." });
+            return Json(new { success = false, message = "Randevu talep edilen proje bulunamadı veya yayından kaldırılmış." });
+        }
+
+        // 2. Tarih Kontrolü
+        if (!ValidationHelper.IsValidAppointmentDate(preferredDate))
+        {
+            return Json(new { success = false, message = "Lütfen bugünden itibaren geçerli bir randevu tarihi seçiniz (en fazla 1 yıl sonrası)." });
+        }
+
+        // 3. Saat Aralığı Kontrolü
+        if (!ValidationHelper.IsValidTimeSlot(preferredTimeSlot))
+        {
+            return Json(new { success = false, message = "Lütfen listeden geçerli bir randevu saat aralığı seçiniz." });
         }
 
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {
-            return Json(new { success = false, message = "Kullanıcı oturumu bulunamadı." });
+            return Json(new { success = false, message = "Kullanıcı oturumu bulunamadı. Lütfen tekrar giriş yapınız." });
+        }
+
+        // 4. Telefon Numarası Kontrolü (Randevu onayı için zorunlu)
+        var targetPhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : (user.PhoneNumber ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(targetPhone) || !PhoneHelper.IsValid(targetPhone, allowLandline: true))
+        {
+            return Json(new { success = false, message = "Randevu onayı için geçerli bir iletişim numarası girilmesi zorunludur. (Örn: 0532 123 45 67 veya 0212 555 01 23)" });
+        }
+
+        // 5. Notlar Uzunluk Kontrolü
+        if (notes != null && notes.Length > 1000)
+        {
+            return Json(new { success = false, message = "Ek notlar en fazla 1000 karakter olabilir." });
         }
 
         var appointment = new ProjectAppointment
@@ -181,9 +293,9 @@ public class ProjectController : Controller
             UserId = user.Id,
             FullName = user.FullName ?? user.UserName ?? "Kullanıcı",
             Email = user.Email ?? "",
-            Phone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : (user.PhoneNumber ?? ""),
+            Phone = PhoneHelper.FormatDisplay(targetPhone),
             PreferredDate = preferredDate.Date,
-            PreferredTimeSlot = !string.IsNullOrWhiteSpace(preferredTimeSlot) ? preferredTimeSlot : "10:00 - 12:00",
+            PreferredTimeSlot = preferredTimeSlot.Trim(),
             Notes = notes?.Trim(),
             Status = "Beklemede",
             CreatedAt = DateTime.UtcNow

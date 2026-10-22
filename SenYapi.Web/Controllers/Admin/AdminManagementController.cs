@@ -59,6 +59,12 @@ public class AdminManagementController : AdminBaseController
     [HasPermission(Permissions.ContentCreate)]
     public async Task<IActionResult> AddService(ServiceItem model, IFormFile? imageFile)
     {
+        if (!ValidationHelper.IsCleanText(model.Title, 2, 150))
+        {
+            TempData["AdminError"] = "Hizmet başlığı en az 2, en fazla 150 karakter olmalıdır.";
+            return RedirectToAction(nameof(Services));
+        }
+
         if (imageFile != null && imageFile.Length > 0)
         {
             var (success, filePath, error) = await _fileService.UploadImageAsync(imageFile, "services");
@@ -88,6 +94,12 @@ public class AdminManagementController : AdminBaseController
     [HasPermission(Permissions.ContentEdit)]
     public async Task<IActionResult> UpdateService(ServiceItem model, IFormFile? imageFile)
     {
+        if (!ValidationHelper.IsCleanText(model.Title, 2, 150))
+        {
+            TempData["AdminError"] = "Hizmet başlığı en az 2, en fazla 150 karakter olmalıdır.";
+            return RedirectToAction(nameof(Services));
+        }
+
         var existing = await _serviceService.GetServiceByIdAsync(model.Id);
         if (existing == null)
         {
@@ -151,6 +163,33 @@ public class AdminManagementController : AdminBaseController
     [HasPermission(Permissions.ContentCreate)]
     public async Task<IActionResult> AddTeamMember(TeamMember model, IFormFile? imageFile)
     {
+        if (!ValidationHelper.IsCleanText(model.FullName, 2, 100) || !ValidationHelper.IsCleanText(model.Title, 2, 100))
+        {
+            TempData["AdminError"] = "Ad Soyad ve Ünvan alanları en az 2 karakter olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.TwitterUrl) && !ValidationHelper.IsValidUrl(model.TwitterUrl))
+        {
+            TempData["AdminError"] = "Twitter bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.FacebookUrl) && !ValidationHelper.IsValidUrl(model.FacebookUrl))
+        {
+            TempData["AdminError"] = "Facebook bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.LinkedInUrl) && !ValidationHelper.IsValidUrl(model.LinkedInUrl))
+        {
+            TempData["AdminError"] = "LinkedIn bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.InstagramUrl) && !ValidationHelper.IsValidUrl(model.InstagramUrl))
+        {
+            TempData["AdminError"] = "Instagram bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+
         if (imageFile != null && imageFile.Length > 0)
         {
             var (success, filePath, error) = await _fileService.UploadImageAsync(imageFile, "team");
@@ -180,6 +219,33 @@ public class AdminManagementController : AdminBaseController
     [HasPermission(Permissions.ContentEdit)]
     public async Task<IActionResult> UpdateTeamMember(TeamMember model, IFormFile? imageFile)
     {
+        if (!ValidationHelper.IsCleanText(model.FullName, 2, 100) || !ValidationHelper.IsCleanText(model.Title, 2, 100))
+        {
+            TempData["AdminError"] = "Ad Soyad ve Ünvan alanları en az 2 karakter olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.TwitterUrl) && !ValidationHelper.IsValidUrl(model.TwitterUrl))
+        {
+            TempData["AdminError"] = "Twitter bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.FacebookUrl) && !ValidationHelper.IsValidUrl(model.FacebookUrl))
+        {
+            TempData["AdminError"] = "Facebook bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.LinkedInUrl) && !ValidationHelper.IsValidUrl(model.LinkedInUrl))
+        {
+            TempData["AdminError"] = "LinkedIn bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+        if (!string.IsNullOrWhiteSpace(model.InstagramUrl) && !ValidationHelper.IsValidUrl(model.InstagramUrl))
+        {
+            TempData["AdminError"] = "Instagram bağlantısı geçerli ve güvenli bir URL olmalıdır.";
+            return RedirectToAction(nameof(Team));
+        }
+
         var existing = await _teamService.GetTeamMemberByIdAsync(model.Id);
         if (existing == null)
         {
@@ -250,16 +316,84 @@ public class AdminManagementController : AdminBaseController
     [HasPermission(Permissions.SettingsEdit)]
     public async Task<IActionResult> UpdateSettings(SiteSetting model, IFormFile? logoFile, IFormFile? faviconFile)
     {
+        if (string.IsNullOrWhiteSpace(model.SiteTitle) || !ValidationHelper.IsCleanText(model.SiteTitle, 2, 100))
+        {
+            TempData["AdminError"] = "Site başlığı en az 2, en fazla 100 karakter olmalıdır.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Phone))
+        {
+            if (!PhoneHelper.IsValid(model.Phone, allowLandline: true))
+            {
+                TempData["AdminError"] = "Lütfen geçerli bir kurumsal telefon veya mobil numara giriniz (Örn: 0212 123 45 67 veya 0532 123 45 67).";
+                return RedirectToAction(nameof(Settings));
+            }
+            model.Phone = PhoneHelper.FormatDisplay(model.Phone);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Email) && !ValidationHelper.IsValidEmail(model.Email))
+        {
+            TempData["AdminError"] = "Lütfen geçerli bir kurumsal e-posta adresi giriniz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.TwitterUrl) && !ValidationHelper.IsValidUrl(model.TwitterUrl))
+        {
+            TempData["AdminError"] = "Twitter/X URL adresi geçersiz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.FacebookUrl) && !ValidationHelper.IsValidUrl(model.FacebookUrl))
+        {
+            TempData["AdminError"] = "Facebook URL adresi geçersiz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.InstagramUrl) && !ValidationHelper.IsValidUrl(model.InstagramUrl))
+        {
+            TempData["AdminError"] = "Instagram URL adresi geçersiz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.LinkedInUrl) && !ValidationHelper.IsValidUrl(model.LinkedInUrl))
+        {
+            TempData["AdminError"] = "LinkedIn URL adresi geçersiz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.YouTubeUrl) && !ValidationHelper.IsValidUrl(model.YouTubeUrl))
+        {
+            TempData["AdminError"] = "YouTube URL adresi geçersiz.";
+            return RedirectToAction(nameof(Settings));
+        }
+
         if (logoFile != null && logoFile.Length > 0)
         {
-            var (success, filePath, _) = await _fileService.UploadImageAsync(logoFile, "settings");
-            if (success) model.LogoUrl = filePath!;
+            var (success, filePath, error) = await _fileService.UploadImageAsync(logoFile, "settings");
+            if (success)
+            {
+                model.LogoUrl = filePath!;
+            }
+            else
+            {
+                TempData["AdminError"] = error ?? "Logo yüklenemedi.";
+                return RedirectToAction(nameof(Settings));
+            }
         }
 
         if (faviconFile != null && faviconFile.Length > 0)
         {
-            var (success, filePath, _) = await _fileService.UploadImageAsync(faviconFile, "settings");
-            if (success) model.FaviconUrl = filePath!;
+            var (success, filePath, error) = await _fileService.UploadImageAsync(faviconFile, "settings");
+            if (success)
+            {
+                model.FaviconUrl = filePath!;
+            }
+            else
+            {
+                TempData["AdminError"] = error ?? "Favicon yüklenemedi.";
+                return RedirectToAction(nameof(Settings));
+            }
         }
 
         await _settingService.UpdateSettingsAsync(model, CurrentAdminName);

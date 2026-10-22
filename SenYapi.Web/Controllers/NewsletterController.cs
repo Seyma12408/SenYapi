@@ -17,9 +17,9 @@ public class NewsletterController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Subscribe(string email)
     {
-        if (string.IsNullOrWhiteSpace(email))
+        if (string.IsNullOrWhiteSpace(email) || !ValidationHelper.IsValidEmail(email))
         {
-            TempData["NewsletterError"] = "Lütfen geçerli bir e-posta adresi giriniz.";
+            TempData["NewsletterError"] = "Lütfen geçerli bir e-posta adresi giriniz. (Örn: ad.soyad@example.com)";
         }
         else
         {

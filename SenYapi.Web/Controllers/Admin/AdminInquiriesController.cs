@@ -43,6 +43,12 @@ public class AdminInquiriesController : AdminBaseController
             return RedirectToAction(nameof(Inquiries));
         }
 
+        if (!ValidationHelper.IsValidInquiryStatus(newStatus))
+        {
+            TempData["AdminError"] = "Geçersiz bilgi talebi durumu seçildi.";
+            return RedirectToAction(nameof(Inquiries));
+        }
+
         var success = await _inquiryService.ReplyInquiryAsync(id, replyText.Trim(), newStatus, CurrentAdminName);
         if (success)
         {
@@ -60,6 +66,12 @@ public class AdminInquiriesController : AdminBaseController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateInquiryStatus(int id, string status)
     {
+        if (!ValidationHelper.IsValidInquiryStatus(status))
+        {
+            TempData["AdminError"] = "Geçersiz bilgi talebi durumu seçildi.";
+            return RedirectToAction(nameof(Inquiries));
+        }
+
         await _inquiryService.UpdateInquiryStatusAsync(id, status);
         TempData["AdminSuccess"] = "Bilgi talebi durumu güncellendi.";
         await _auditLogService.LogAsync(CurrentAdminName, "Bilgi Talebi Durum Güncelleme", "ProjectInquiry", $"InquiryId: {id}, Durum: {status}");
